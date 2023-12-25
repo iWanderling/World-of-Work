@@ -17,14 +17,30 @@ def create_font(size: int, text: str, x: int, y: int, color='white', font_type=N
     return text_surface, text_surface.get_rect(center=(x, y))
 
 
-# Добавить маску (комментарий)
+# Обработка событий нажатия определённых кнопок:
+def handle(description):
+    if description == 'game_menu':
+        game_window()
+    elif description == 'main_menu' or description == 'back_to_main_menu':
+        main_menu()
+    elif description == 'settings_menu' or description == 'back_to_settings_menu':
+        settings_menu()
+    elif description == 'difficult_menu':
+        difficult_menu()
+    elif description == 'sound_menu':
+        sound_menu()
+    elif description == 'exit':
+        pygame.quit()
+
+# Добавить маску изображения для корректной обработки столкновений (пожелание)
 
 # Класс для создания кнопок. От него идут классы для создания кнопок меню и локаций
 class Button:
-    def __init__(self, img, hover_img, x, y, width, height):
+    def __init__(self, img, hover_img, x, y, width, height, description=None):
 
         # Наведен ли курсор на кнопку
         self.is_hovered = False
+        self.description = description
 
         # Загрузка основного изображения
         self.image = pygame.image.load(img)
@@ -55,11 +71,19 @@ class Button:
         if self.is_hovered:
             self.sound.play()
 
+    # Обработка событий:
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if self.is_hovered:
+                    self.soundplay()
+                    handle(self.description)
+
 
 # Класс для создания кнопок главного меню (Наследуется от Button)
 class MenuButton(Button):
-    def __init__(self, x, y, image_text, width=150, height=70):
-        super().__init__('files/img/button.png', 'files/img/button_hover.png', x, y, width, height)
+    def __init__(self, x, y, image_text, description=None, width=150, height=70):
+        super().__init__('files/img/button.png', 'files/img/button_hover.png', x, y, width, height, description)
         self.image_text = image_text  # Текст на кнопке
 
         # Создаём текст
@@ -81,9 +105,9 @@ def main_menu():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     screen.blit(image_background, (0, 0))
 
-    play = MenuButton(WIDTH // 2 - 75, 70, 'Играть')
-    settings = MenuButton(WIDTH // 2 - 75, 170, 'Настройки')
-    exit_button = MenuButton(WIDTH // 2 - 75, 270, 'Выход')
+    play = MenuButton(WIDTH // 2 - 75, 70, 'Играть', 'game_menu')
+    settings = MenuButton(WIDTH // 2 - 75, 170, 'Настройки', 'settings_menu')
+    exit_button = MenuButton(WIDTH // 2 - 75, 270, 'Выход', 'exit')
     menu_buttons = (play, settings, exit_button)
     screen.blit(image_background, (0, 0))
     running = True
@@ -94,33 +118,17 @@ def main_menu():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-
-                    # Обработка проигрывания звука при нажатии кнопки
-                    for btn in menu_buttons:
-                        btn.soundplay()
-
-                    # обработка нажатия на кнопку запуска игры
-                    if play.is_hovered:
-                        game_window()
-
-                    # обработка нажатия на кнопку выхода из игры
-                    if exit_button.is_hovered:
-                        terminate()
-
-                    # обработка нажатия на кнопку настроек
-                    if settings.is_hovered:
-                        settings_menu()
+            for btn in menu_buttons:
+                btn.handle_event(event)
 
         pygame.display.flip()
 
 
 # Окно с игровыми настройками
 def settings_menu():
-    sound_settings_button = MenuButton(WIDTH // 2 - 75, 70, 'Звук')
-    difficult_settings_button = MenuButton(WIDTH // 2 - 75, 170, 'Сложность')
-    back_button_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад')
+    sound_settings_button = MenuButton(WIDTH // 2 - 75, 70, 'Звук', 'sound_menu')
+    difficult_settings_button = MenuButton(WIDTH // 2 - 75, 170, 'Сложность', 'difficult_menu')
+    back_button_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад', 'back_to_main_menu')
     settings_buttons = (sound_settings_button, difficult_settings_button, back_button_button)
     screen.blit(image_background, (0, 0))
     running = True
@@ -131,24 +139,8 @@ def settings_menu():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-
-                    # Проигрывание звука при нажатии кнопки
-                    for btn in settings_buttons:
-                        btn.soundplay()
-
-                    # обработка нажатия на кнопку регулировки звука
-                    if sound_settings_button.is_hovered:
-                        sound_menu()
-
-                    # обработка нажатия на кнопку изменения сложности
-                    if difficult_settings_button.is_hovered:
-                        difficult_menu()
-
-                    # обработка нажатия на кнопку <назад> (в главное меню)
-                    if back_button_button.is_hovered:
-                        main_menu()
+            for btn in settings_buttons:
+                btn.handle_event(event)
 
         pygame.display.flip()
 
@@ -191,7 +183,7 @@ def difficult_menu():
 
 # Окно с регулировкой звука
 def sound_menu():
-    back_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад')  # Кнопка <назад>
+    back_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад', 'back_to_settings_menu')  # Кнопка <назад>
 
     # создание шрифта
     text_surface, text_rect = create_font(size=36, text='Регулируйте звук стрелочками (влево и вправо)',
@@ -206,10 +198,7 @@ def sound_menu():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
-            # если кнопка <назад> нажата, то возвращаемся в настройки
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1 and back_button.is_hovered:
-                    settings_menu()
+            back_button.handle_event(event)
 
         pygame.display.flip()
 
@@ -369,6 +358,7 @@ def builder_game():
         pygame.display.flip()
 
 
+# Запуск программы:
 if __name__ == '__main__':
     pygame.init()
     pygame.display.set_caption('Мир Труда')
