@@ -1,40 +1,49 @@
 import os
 import pygame
-from base_functions import terminate, draw_buttons_group, event_quit
+from base_functions import draw_buttons_group
 
 
+# Переменные для ширины и высоты экрана
 WIDTH, HEIGHT = 600, 400
-RUNNING = 1
-os.environ['SDL_VIDEO_CENTERED'] = '1'
+os.environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
 
 
-# Класс, создающий объект кнопки в главном меню игры
-class MenuButton:
-    def __init__(self, x, y, image_text, width=150, height=70):
-        self.image_text = image_text
+# Создать шрифт (параметры: размер, текст, x, y (относительно центра), цвет, тип шрифта, сглаживание)
+def create_font(size: int, text: str, x: int, y: int, color='white', font_type=None, smoothing=False) -> tuple:
+    font = pygame.font.Font(font_type, size)
+    text_surface = font.render(text, smoothing, color)
+
+    return text_surface, text_surface.get_rect(center=(x, y))
+
+
+# Добавить маску (комментарий)
+
+# Класс для создания кнопок. От него идут классы для создания кнопок меню и локаций
+class Button:
+    def __init__(self, img, hover_img, x, y, width, height):
+
+        # Наведен ли курсор на кнопку
         self.is_hovered = False
-        self.is_pressed = False
 
-        self.image = pygame.image.load('files/img/button.png')
+        # Загрузка основного изображения
+        self.image = pygame.image.load(img)
         self.image = pygame.transform.scale(self.image, (width, height))  # масштабирование картинки под размер кнопки
 
-        self.hover_image = pygame.image.load('files/img/button_hover.png')
+        # Загрузка изображения при наведении
+        self.hover_image = pygame.image.load(hover_img)
         self.hover_image = pygame.transform.scale(self.hover_image, (width, height))
 
+        # Загрузка звукового эффекта при нажатии кнопки
         self.sound = pygame.mixer.Sound('files/sounds/sound.mp3')
         self.rect = self.image.get_rect(topleft=(x, y))
 
+    # Отрисовка кнопки (в зависимости от того, наведен ли курсор на кнопку, картинка меняется)
     def draw(self, screen):
         if self.is_hovered:
             current_image = self.hover_image
         else:
             current_image = self.image
         screen.blit(current_image, self.rect.topleft)
-
-        font = pygame.font.Font(None, 36)
-        text_surface = font.render(self.image_text, True, (255, 255, 255))
-        text_rect = text_surface.get_rect(center=self.rect.center)
-        screen.blit(text_surface, text_rect)
 
     # Проверка: наведена ли мышь на кнопку
     def check_hover(self, mouse_pos):
@@ -46,54 +55,80 @@ class MenuButton:
             self.sound.play()
 
 
-# Окно главного меню
-def main_menu():
-    play = MenuButton(WIDTH // 2 - 75, 70, 'Играть')
-    settings = MenuButton(WIDTH // 2 - 75, 170, 'Настройки')
-    exit_ = MenuButton(WIDTH // 2 - 75, 270, 'Выход')
-    menu_buttons = [play, settings, exit_]
+# Класс для создания кнопок главного меню (Наследуется от Button)
+class MenuButton(Button):
+    def __init__(self, x, y, image_text, width=150, height=70):
+        super().__init__('files/img/button.png', 'files/img/button_hover.png', x, y, width, height)
+        self.image_text = image_text  # Текст на кнопке
 
+        # Создаём текст
+        x, y = self.rect.center
+        self.text_surface, self.text_rect = create_font(size=36, text=self.image_text, x=x, y=y, smoothing=True)
+
+    # Отрисовка кнопки с текстом
+    def draw(self, screen):
+        if self.is_hovered:
+            current_image = self.hover_image
+        else:
+            current_image = self.image
+        screen.blit(current_image, self.rect.topleft)
+        screen.blit(self.text_surface, self.text_rect)
+
+
+# Окно главного меню игры (самое первое окно, которое появляется при запуске игры)
+def main_menu():
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
     screen.blit(image_background, (0, 0))
 
-    while RUNNING:
-        draw_buttons_group(menu_buttons, screen)
+    play = MenuButton(WIDTH // 2 - 75, 70, 'Играть')
+    settings = MenuButton(WIDTH // 2 - 75, 170, 'Настройки')
+    exit_button = MenuButton(WIDTH // 2 - 75, 270, 'Выход')
+    menu_buttons = (play, settings, exit_button)
+    screen.blit(image_background, (0, 0))
+    running = True
+    while running:
+        draw_buttons_group(menu_buttons, screen)  # Отрисовка группы
 
         for event in pygame.event.get():
-            event_quit(event)
+            if event.type == pygame.QUIT:
+                pygame.quit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
 
-                    # Проигрывание звука при нажатии кнопки
+                    # Обработка проигрывания звука при нажатии кнопки
                     for btn in menu_buttons:
                         btn.soundplay()
 
+                    # обработка нажатия на кнопку запуска игры
                     if play.is_hovered:
                         game_window()
 
-                    if exit_.is_hovered:
+                    # обработка нажатия на кнопку выхода из игры
+                    if exit_button.is_hovered:
                         terminate()
 
+                    # обработка нажатия на кнопку настроек
                     if settings.is_hovered:
                         settings_menu()
 
         pygame.display.flip()
 
 
-# Окно с настройками
+# Окно с игровыми настройками
 def settings_menu():
-    sound_settings = MenuButton(WIDTH // 2 - 75, 70, 'Звук')
-    difficult_settings = MenuButton(WIDTH // 2 - 75, 170, 'Сложность')
-    back_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад')
-    settings_buttons = [sound_settings, difficult_settings, back_button]
-
+    sound_settings_button = MenuButton(WIDTH // 2 - 75, 70, 'Звук')
+    difficult_settings_button = MenuButton(WIDTH // 2 - 75, 170, 'Сложность')
+    back_button_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад')
+    settings_buttons = (sound_settings_button, difficult_settings_button, back_button_button)
     screen.blit(image_background, (0, 0))
-
-    while RUNNING:
+    running = True
+    while running:
         draw_buttons_group(settings_buttons, screen)
 
         for event in pygame.event.get():
-            event_quit(event)
+            if event.type == pygame.QUIT:
+                pygame.quit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -102,46 +137,46 @@ def settings_menu():
                     for btn in settings_buttons:
                         btn.soundplay()
 
-                    if sound_settings.is_hovered:
+                    # обработка нажатия на кнопку регулировки звука
+                    if sound_settings_button.is_hovered:
                         sound_menu()
 
-                    if difficult_settings.is_hovered:
+                    # обработка нажатия на кнопку изменения сложности
+                    if difficult_settings_button.is_hovered:
                         difficult_menu()
 
-                    if back_button.is_hovered:
+                    # обработка нажатия на кнопку <назад> (в главное меню)
+                    if back_button_button.is_hovered:
                         main_menu()
 
         pygame.display.flip()
 
 
-# Окно с выбором сложности
+# Окно с выбором сложности в игре
 def difficult_menu():
-
-    with open('settings.txt') as f:
-        diff = str(f.readlines()[0])
-
-    font = pygame.font.Font(None, 54)
-    text_surface = font.render(f'Текущий уровень: {diff}', False, 'white')
-    text_rect = text_surface.get_rect(center=(WIDTH // 2, 40))
-
     easy_difficult = MenuButton(WIDTH // 2 - 75, 70, 'Легкий')
     medium_difficult = MenuButton(WIDTH // 2 - 75, 170, 'Средний')
     hard_difficult = MenuButton(WIDTH // 2 - 75, 270, 'Высокий')
-    difficult_buttons = [easy_difficult, medium_difficult, hard_difficult]
-
+    difficult_buttons = (easy_difficult, medium_difficult, hard_difficult)
     screen.blit(image_background, (0, 0))
+    # Определяем текущую сложность
+    with open('settings.txt') as f:
+        text_surface, text_rect = create_font(size=54, text=f'Текущий уровень: {str(f.readlines()[0])}',
+                                              x=WIDTH // 2, y=40)  # Font created
 
-    while RUNNING:
+    running = True
+    while running:
         draw_buttons_group(difficult_buttons, screen)
-        screen.blit(text_surface, text_rect)
+        screen.blit(text_surface, text_rect)  # отрисовка шрифта
 
         for event in pygame.event.get():
-            event_quit(event)
+            if event.type == pygame.QUIT:
+                pygame.quit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
 
-                    # Проигрывание звука при нажатии кнопки
+                    # изменение сложности игры в зависимости от того, какая кнопка нажата
                     for btn in difficult_buttons:
                         if btn.is_hovered:
                             with open('settings.txt', 'w') as f:
@@ -153,21 +188,24 @@ def difficult_menu():
         pygame.display.flip()
 
 
+# Окно с регулировкой звука
 def sound_menu():
-    font = pygame.font.Font(None, 36)
-    text_surface = font.render('Регулируйте звук стрелочками (влево и вправо)', False, 'white')
-    text_rect = text_surface.get_rect(center=(WIDTH // 2, 50))
+    back_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад')  # Кнопка <назад>
+
+    # создание шрифта
+    text_surface, text_rect = create_font(size=36, text='Регулируйте звук стрелочками (влево и вправо)',
+                                          color='white', x=WIDTH // 2, y=50)
     screen.blit(image_background, (0, 0))
-
-    back_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад')
-
-    while RUNNING:
+    running = True
+    while running:
         draw_buttons_group([back_button], screen)
-        screen.blit(text_surface, text_rect)
+        screen.blit(text_surface, text_rect)  # создание шрифта
 
         for event in pygame.event.get():
-            event_quit(event)
+            if event.type == pygame.QUIT:
+                pygame.quit()
 
+            # если кнопка <назад> нажата, то возвращаемся в настройки
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1 and back_button.is_hovered:
                     settings_menu()
@@ -175,12 +213,82 @@ def sound_menu():
         pygame.display.flip()
 
 
+# Игровое окно
 def game_window():
     WIDTH, HEIGHT = 1000, 700
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    image_background = pygame.image.load('files/img/brickstone_background.jpg')
-    image_background = pygame.transform.scale(image_background, (WIDTH, HEIGHT))
-    screen.blit(image_background, (0, 0))
+
+    game_background = pygame.transform.scale(pygame.image.load('files/img/game_background_secret_version.png'),
+                                             (WIDTH, HEIGHT))
+
+    farm_location = Button('files/img/farm.png', 'files/img/farm_hover.png', 100, HEIGHT // 2 - 150, 300, 300)
+    build_location = Button('files/img/build.png', 'files/img/build_hover.png', 600, HEIGHT // 2 - 150, 300, 300)
+    arrow_button = Button('files/img/arrow_left.png', 'files/img/arrow_left.png', 0, 0, 50, 50)
+    location_group = (farm_location, build_location, arrow_button)
+    screen.blit(game_background, (0, 0))
+    running = True
+    while running:
+        draw_buttons_group(location_group, screen)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if farm_location.is_hovered:
+                        farm_game()
+                    elif build_location.is_hovered:
+                        builder_game()
+                    if arrow_button.is_hovered:
+                        main_menu()
+
+        pygame.display.flip()
+
+
+def farm_game():
+    text_surface, text_rect = create_font(54, 'ЗДЕСЬ СКОРО ЧТО-ТО ПОЯВИТСЯ', WIDTH, HEIGHT)
+    arrow_button = Button('files/img/arrow_left.png', 'files/img/arrow_left.png', 0, 0, 50, 50)
+
+    screen.fill('blue')
+
+    running = True
+    while running:
+        draw_buttons_group([arrow_button], screen)
+        screen.blit(text_surface, text_rect)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if arrow_button.is_hovered:
+                        game_window()
+
+        pygame.display.flip()
+
+
+def builder_game():
+    text_surface, text_rect = create_font(54, 'ЗДЕСЬ СКОРО ЧТО-ТО ПОЯВИТСЯ', WIDTH, HEIGHT)
+    arrow_button = Button('files/img/arrow_left.png', 'files/img/arrow_left.png', 0, 0, 50, 50)
+    screen.fill('blue')
+
+    running = True
+    while running:
+        draw_buttons_group([arrow_button], screen)
+        screen.blit(text_surface, text_rect)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if arrow_button.is_hovered:
+                        game_window()
+
+        pygame.display.flip()
 
 
 if __name__ == '__main__':
