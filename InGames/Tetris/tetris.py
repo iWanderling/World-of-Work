@@ -144,3 +144,6 @@ def Tetris_Game():
         screen.blit(NEXT_FIGURE_FONT, (375, 185))
         pygame.display.flip()
         clock.tick(FPS)
+
+
+Tetris_Game()

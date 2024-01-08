@@ -1,29 +1,27 @@
-import random
+from os import environ
 from Buttons import *
 from settings import *
-from pygame import mouse
+from random import random, randint
 
 
-# Отрисовка кнопок и обработка наведения мыши на них
-def draw_buttons_group(group, screen):
-    for b in group:
-        b.draw(screen)
-        b.check_hover(mouse.get_pos())
+environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
 
 
 # Окно главного меню игры (самое первое окно, которое появляется при запуске игры)
-def main_menu():
+def mainMenu():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    screen.blit(image_background, (0, 0))
 
-    play = MenuButton(WIDTH // 2 - 75, 70, 'Играть')
-    settings = MenuButton(WIDTH // 2 - 75, 170, 'Настройки')
-    exit_button = MenuButton(WIDTH // 2 - 75, 270, 'Выход')
-    menu_buttons = (play, settings, exit_button)
-    screen.blit(image_background, (0, 0))
+    # создание кнопок главного меню
+    play = MenuButton(y=70, image_text='Играть')
+    settings_button = MenuButton(y=170, image_text='Настройки')
+    exit_button = MenuButton(y=270, image_text='Выход')
+    menu_buttons = (play, settings_button, exit_button)  # список кнопок
+
+    # игровой цикл
     running = True
     while running:
-        draw_buttons_group(menu_buttons, screen)  # Отрисовка группы
+        screen.blit(menu_background, (0, 0))
+        draw_buttons_group(menu_buttons, screen)  # Отрисовка группы кнопок
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -38,34 +36,38 @@ def main_menu():
 
                     # обработка нажатия на кнопку запуска игры
                     if play.is_hovered:
-                        game_window()
+                        gameLobby()
 
                     # обработка нажатия на кнопку выхода из игры
                     if exit_button.is_hovered:
                         pygame.quit()
 
                     # обработка нажатия на кнопку настроек
-                    if settings.is_hovered:
-                        settings_menu()
+                    if settings_button.is_hovered:
+                        settings()
 
         pygame.display.flip()
 
 
 # Окно с игровыми настройками
-def settings_menu():
-    sound_settings_button = MenuButton(WIDTH // 2 - 75, 70, 'Звук')
-    difficult_settings_button = MenuButton(WIDTH // 2 - 75, 170, 'Сложность')
-    back_button_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад')
-    settings_buttons = (sound_settings_button, difficult_settings_button, back_button_button)
-    screen.blit(image_background, (0, 0))
+def settings():
+    # создание кнопок
+    difficult_settings_button = MenuButton(y=100, image_text='Сложность')
+    back_button_button = MenuButton(y=200, image_text='Назад')
+    settings_buttons = (difficult_settings_button, back_button_button)  # список кнопок для их обработки и отображения
+
+    # Игровой цикл
     running = True
     while running:
+        screen.blit(menu_background, (0, 0))  # задний фон окна
         draw_buttons_group(settings_buttons, screen)
 
+        # обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
+            # обработка нажатия левой кнопки мыши
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
 
@@ -73,182 +75,167 @@ def settings_menu():
                     for btn in settings_buttons:
                         btn.soundplay()
 
-                    # обработка нажатия на кнопку регулировки звука
-                    if sound_settings_button.is_hovered:
-                        sound_menu()
-
                     # обработка нажатия на кнопку изменения сложности
                     if difficult_settings_button.is_hovered:
-                        difficult_menu()
+                        difficult()
 
                     # обработка нажатия на кнопку <назад> (в главное меню)
                     if back_button_button.is_hovered:
-                        main_menu()
+                        mainMenu()
 
         pygame.display.flip()
 
 
 # Окно с выбором сложности в игре
-def difficult_menu():
+def difficult():
     global DIFFICULT_K
-    easy_difficult = MenuButton(WIDTH // 2 - 75, 70, 'Легкий')
-    medium_difficult = MenuButton(WIDTH // 2 - 75, 170, 'Средний')
-    hard_difficult = MenuButton(WIDTH // 2 - 75, 270, 'Высокий')
-    difficult_buttons = (easy_difficult, medium_difficult, hard_difficult)
-    screen.blit(image_background, (0, 0))
+
+    # кнопки выбора сложности
+    easy_difficult = MenuButton(y=70, image_text='Легкий')
+    medium_difficult = MenuButton(y=170, image_text='Средний')
+    hard_difficult = MenuButton(y=270, image_text='Высокий')
+    difficult_buttons = (easy_difficult, medium_difficult, hard_difficult)  # список кнопок
+
     # Определяем текущую сложность
-    with open('settings.txt') as f:
+    with open('files/game_settings/settings.txt') as f:
         difficult_level = str(f.readlines()[0])
         DIFFICULT_K = {'Легкий': 1, 'Средний': 2, 'Высокий': 3}[difficult_level]
         text_surface, text_rect = create_font(size=54, text=f'Текущий уровень: {difficult_level}',
                                               x=WIDTH // 2, y=40)  # Font created
 
+    # игровой цикл
     running = True
     while running:
-        draw_buttons_group(difficult_buttons, screen)
+        screen.blit(menu_background, (0, 0))  # отрисовка фона
         screen.blit(text_surface, text_rect)  # отрисовка шрифта
+        draw_buttons_group(difficult_buttons, screen)
 
+        # обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-
                     # изменение сложности игры в зависимости от того, какая кнопка нажата
                     for btn in difficult_buttons:
                         if btn.is_hovered:
-                            with open('settings.txt', 'w') as f:
+                            with open('files/game_settings/settings.txt', 'w') as f:
                                 f.write(btn.image_text)
                             btn.soundplay()
-                            settings_menu()
+                            settings()
                             break
 
         pygame.display.flip()
 
 
-# Окно с регулировкой звука
-def sound_menu():
-    back_button = MenuButton(WIDTH // 2 - 75, 270, 'Назад')  # Кнопка <назад>
-
-    # создание шрифта
-    text_surface, text_rect = create_font(size=36, text='Регулируйте звук стрелочками (влево и вправо)',
-                                          color='white', x=WIDTH // 2, y=50)
-    screen.blit(image_background, (0, 0))
-    running = True
-    while running:
-        draw_buttons_group([back_button], screen)
-        screen.blit(text_surface, text_rect)  # создание шрифта
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-
-            # если кнопка <назад> нажата, то возвращаемся в настройки
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1 and back_button.is_hovered:
-                    settings_menu()
-
-        pygame.display.flip()
-
-
 # Игровое окно
-def game_window():
+def gameLobby():
     WIDTH, HEIGHT = 1000, 700
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
-    game_background = pygame.transform.scale(pygame.image.load('files/img/interface/game_background_secret_version.png'),
-                                             (WIDTH, HEIGHT))
+    # задний фон игровой карты (лобби)
+    lobby_background = pygame.image.load(Images.lobby_background)
+    lobby_background = pygame.transform.scale(lobby_background, (WIDTH, HEIGHT))
 
-    farm_location = Button('files/img/farm_game/farm.png', 'files/img/farm_game/farm_hover.png',
-                           100, HEIGHT // 2 - 150, 300, 300)
-    build_location = Button('files/img/builder_game/build.png', 'files/img/builder_game/build_hover.png',
-                            600, HEIGHT // 2 - 150, 300, 300)
-    arrow_button = Button('files/img/interface/arrow_left.png', 'files/img/interface/arrow_left.png', 0, 0, 50, 50)
-    location_group = (farm_location, build_location, arrow_button)
-    screen.blit(game_background, (0, 0))
+    farm_location = Button(*Images.farm_button, 100, HEIGHT // 2 - 150)  # кнопка для локации фермера
+    build_location = Button(*Images.builder_button, 600, HEIGHT // 2 - 150)  # кнопка для локации строителя
+    arrow_button = Button(*Images.arrow_back_button, 0, 0, 50, 50)  # кнопка "назад"
+    lobby_buttons = (farm_location, build_location, arrow_button)  # кнопки лобби
+
+    # игровой цикл
     running = True
     while running:
-        draw_buttons_group(location_group, screen)
+        screen.blit(lobby_background, (0, 0))
+        draw_buttons_group(lobby_buttons, screen)
 
+        # обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    if farm_location.is_hovered:
-                        farm_game()
-                    elif build_location.is_hovered:
-                        builder_game()
-                    if arrow_button.is_hovered:
-                        main_menu()
-
+                    if farm_location.is_hovered:  # нажатие на игру "Весёлый Фермер"
+                        HappyFarmer()
+                    elif build_location.is_hovered:  # нажатие на игру "Строительный Тетрис"
+                        BuilderTetris()
+                    if arrow_button.is_hovered:  # нажатие на кнопку "назад"
+                        mainMenu()
         pygame.display.flip()
 
 
-def farm_game():
+# Игра: Весёлый фермер
+def HappyFarmer():
     global DIFFICULT_K
-    SCREEN_WIDTH = 800
-    SCREEN_HEIGHT = 500
-    FPS = 60
-    WHITE = (255, 255, 255)
-    FONT = pygame.font.Font(None, 36)
+    SCREEN_WIDTH = 800  # ширина окна
+    SCREEN_HEIGHT = 500  # высота окна
+    FPS = 60  # количество кадров в секунду
+    WHITE = (255, 255, 255)  # цвет
+    FONT = pygame.font.Font(None, 36)  # шрифт счётчика
 
-    # Игровые переменные
-    score = 0
-    penalty = 0
+    # Игровые переменные:
+    score = 0  # текущий счёт
     lives = 5  # Начальное количество жизней
-    egg_speed = 2 * DIFFICULT_K
-    player_speed = 6
+    egg_speed = 2 * DIFFICULT_K  # скорость падения предметов (зависит от выбранной сложности)
+    player_speed = 6  # скорость игрока
 
+    # размеры окна игры
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-    egg_image = pygame.image.load("files/img/farm_game/egg.png")
-    basket_left_image = pygame.image.load("files/img/farm_game/farmer_left.png")
-    basket_right_image = pygame.image.load("files/img/farm_game/farmer_right.png")
-    heart_image = pygame.image.load("files/img/farm_game/heart.png")
+    # загружаем картинки для объектов
+    egg_image = pygame.image.load(Images.egg_img)  # яйцо
+    farmer_left_img = pygame.image.load(Images.farmer_left_img)  # фермер, который идёт влево
+    farmer_right_img = pygame.image.load(Images.farmer_right_img)  # фермер, который идёт вправо
+    heart_img = pygame.image.load(Images.heart_img)  # сердца
 
-    # Создаем отдельный поверхностный объект для затемнения экрана
+    # Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
     dim_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
-    egg_width, egg_height = egg_image.get_size()
-    basket_width, basket_height = basket_left_image.get_size()
-    heart_width, heart_height = heart_image.get_size()
+    # Размеры объектов (берутся из изображений)
+    egg_width, egg_height = egg_image.get_size()  # яйцо
+    farmer_width, farmer_height = farmer_left_img.get_size()  # фермер
+    heart_width, heart_height = heart_img.get_size()  # сердца
 
-    basket_x = SCREEN_WIDTH // 2 - basket_width // 2
-    basket_y = SCREEN_HEIGHT - basket_height - 10
+    #
+    basket_x = SCREEN_WIDTH // 2 - farmer_width // 2
+    basket_y = SCREEN_HEIGHT - farmer_height - 10
 
+    # начальное направление движения фермера
     basket_direction = "left"
-    eggs = []
-    paused = False
+    eggs = []  # яйца (ну это понятно)
+    paused = False  # поставлена ли игра на паузу
 
+    # отрисовка всех объектов
     def draw_objects():
         screen.fill(WHITE)
 
+        # картинка фермера зависит от направления его движения
         if basket_direction == "left":
-            screen.blit(basket_left_image, (basket_x, basket_y))
+            screen.blit(farmer_left_img, (basket_x, basket_y))
         else:
-            screen.blit(basket_right_image, (basket_x, basket_y))
+            screen.blit(farmer_right_img, (basket_x, basket_y))
 
+        # отображение яиц
         for q in eggs:
             screen.blit(egg_image, q)
 
+        # отображение оставшегося количества сердец
         for i in range(lives):
-            screen.blit(heart_image, (10 + i * (heart_width + 5), 10))
+            screen.blit(heart_img, (10 + i * (heart_width + 5), 10))
 
-        # Отображение счета в углу
+        # отображение счета в углу
         score_text = FONT.render(f"Счёт: {score}", True, (0, 0, 0))
         screen.blit(score_text, (SCREEN_WIDTH - 130, 10))
 
-        # Отображение паузы
+        # отображение паузы
         if paused:
             # Затемнение экрана
             screen.blit(dim_surface, (0, 0))
             # Отображение текста паузы
-            pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, (0, 0, 0))
-            screen.blit(pause_text, (SCREEN_WIDTH // 2 - 230, SCREEN_HEIGHT // 2 - 20))
+            pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, (0, 0, 0))  # текст паузы
+            screen.blit(pause_text, (SCREEN_WIDTH // 2 - 230, SCREEN_HEIGHT // 2 - 20))  # отображение текста
 
     # Главный цикл игры
     clock = pygame.time.Clock()
@@ -256,40 +243,46 @@ def farm_game():
     while running:
         clock.tick(FPS)
 
+        # обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            # обработка нажатия на клавиши:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:  # Пауза при нажатии P
                     paused = not paused
 
+        # если игра не на паузе - продолжаем обработку событий:
         if not paused:
             keys = pygame.key.get_pressed()
+
+            # обрабатываем движение фермера влево
             if keys[pygame.K_LEFT] and basket_x > 0:
                 basket_x -= player_speed
-                basket_direction = "left"  # Изменение направления корзины
-            if keys[pygame.K_RIGHT] and basket_x < SCREEN_WIDTH - basket_width:
-                basket_x += player_speed
-                basket_direction = "right"  # Изменение направления корзины
+                basket_direction = "left"
 
-            # Добавление нового яйца с вероятностью
-            if random.random() < 0.02:
-                egg_x = random.randint(0, SCREEN_WIDTH - egg_width)
+            # обрабатываем движение фермера вправо
+            elif keys[pygame.K_RIGHT] and basket_x < SCREEN_WIDTH - farmer_width:
+                basket_x += player_speed
+                basket_direction = "right"
+
+            # Добавление нового яйца с вероятностью 2% (за один игровой кадр)
+            if random() < 0.02:
+                egg_x = randint(0, SCREEN_WIDTH - egg_width)
                 egg_y = 0
                 eggs.append((egg_x, egg_y))
 
-            # Движение яиц вниз
+            # падение яиц
             for i in range(len(eggs)):
                 eggs[i] = (eggs[i][0], eggs[i][1] + egg_speed)
 
             # Проверка столкновения яиц с корзиной
             for egg in eggs:
-                if (
-                        egg[0] < basket_x + basket_width
+                if (egg[0] < basket_x + farmer_width
                         and egg[0] + egg_width - 50 > basket_x
-                        and egg[1] < basket_y + basket_height
-                        and egg[1] + egg_height - 50 > basket_y
-                ):
+                        and egg[1] < basket_y + farmer_height
+                        and egg[1] + egg_height - 50 > basket_y):
                     eggs.remove(egg)
                     score += 1
 
@@ -297,30 +290,33 @@ def farm_game():
             for egg in eggs:
                 if egg[1] > SCREEN_HEIGHT:
                     eggs.remove(egg)
-                    penalty += 1
                     lives -= 1  # Уменьшение количества жизней
 
+            # если количество жизней кончилось - завершаем игру
             if lives <= 0:
                 running = False
-                game_window()
+                gameLobby()
 
+        # отрисовка игровых объектов, игры в целом
         draw_objects()
         pygame.display.flip()
 
     pygame.quit()
 
 
-def builder_game():
-    pass
+# Игра: Строительный Тетрис
+def BuilderTetris():
+    Tetris_Game()
 
 
 if __name__ == '__main__':
     pygame.init()
-    pygame.display.set_caption('Мир Труда')
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption('Мир Труда')  # заголовок
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))  # создание окна
 
-    image_background = pygame.image.load('files/img/interface/brickstone_background.jpg')
-    image_background = pygame.transform.scale(image_background, (WIDTH, HEIGHT))
-    screen.blit(image_background, (0, 0))
+    # задний фон главного меню
+    menu_background = pygame.image.load(Images.mainmenu_img)
+    menu_background = pygame.transform.scale(menu_background, (WIDTH, HEIGHT))
 
-    main_menu()
+    # запуск игры (начало игры с главного меню)
+    mainMenu()

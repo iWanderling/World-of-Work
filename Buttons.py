@@ -1,5 +1,5 @@
 import pygame
-
+from settings import WIDTH
 
 # Создать шрифт (параметры: размер, текст, x, y (относительно центра), цвет, тип шрифта, сглаживание)
 def create_font(size: int, text: str, x: int, y: int, color='white', font_type=None, smoothing=False) -> tuple:
@@ -9,10 +9,16 @@ def create_font(size: int, text: str, x: int, y: int, color='white', font_type=N
     return text_surface, text_surface.get_rect(center=(x, y))
 
 
-# Добавить маску (комментарий)
+# Отрисовка кнопок и обработка наведения мыши на них
+def draw_buttons_group(group, screen):
+    for b in group:
+        b.draw(screen)
+        b.check_hover(pygame.mouse.get_pos())
+
+
 # Класс для создания кнопок. От него идут классы для создания кнопок меню и локаций
 class Button:
-    def __init__(self, img, hover_img, x, y, width, height):
+    def __init__(self, img, hover_img, x, y, width=300, height=300):
 
         # Наведен ли курсор на кнопку
         self.is_hovered = False
@@ -49,7 +55,7 @@ class Button:
 
 # Класс для создания кнопок главного меню (Наследуется от Button)
 class MenuButton(Button):
-    def __init__(self, x, y, image_text, width=150, height=70):
+    def __init__(self, x=WIDTH // 2 - 75, y=70, image_text='NONE', width=150, height=70):
         super().__init__('files/img/interface/button.png', 'files/img/interface/button_hover.png', x, y, width, height)
         self.image_text = image_text  # Текст на кнопке
 
