@@ -22,9 +22,16 @@ def TetrisGame():
     WIDTH, HEIGHT = 10, 20  # TILE
     GAME_WINDOW_SIZE = WIDTH * TILE, HEIGHT * TILE  # игровое окно
     WINDOW_SIZE = GAME_WINDOW_SIZE[0] + 200, GAME_WINDOW_SIZE[1]
+    FONT = pygame.font.Font('files/fonts/appetite.ttf', 20)
+    PAUSED = False
+    all_items = pygame.sprite.Group()
 
     # координаты падающей фигуры, скорость падения
     FALL_CURRENT_POSITION, FALL_SPEED = 0, 100
+
+    # Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
+    dim_surface = pygame.Surface((WIDTH, HEIGHT))
+    dim_surface.set_alpha(200)  # Устанавливаем прозрачность
 
     # игровое поле (нужно для отрисовки игрового процесса)
     GAME_FIELD = [[0 for x in range(WIDTH)] for y in range(HEIGHT)]
@@ -37,6 +44,11 @@ def TetrisGame():
                         [(0, 0), (0, -1), (0, 1), (-1, 0)],  # -|
                         [(0, 0), (0, -1), (0, 1), (1, -1)],  # L
                         [(0, 0), (-1, 0), (0, 1), (-1, -1)]]  # .-
+
+    def pause(scr: pygame.surface.Surface):
+        pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, (255, 255, 255))
+        scr.blit(pause_text, (WIDTH + 70, HEIGHT + 50))  # отображение текста
+        scr.blit(dim_surface, (0, 0))  # Затемнение экрана
 
     """ ПОДГОТОВКА """
 
@@ -88,15 +100,16 @@ def TetrisGame():
             if event.type == pygame.QUIT:  # выход
                 exit()
             if event.type == pygame.KEYDOWN:  # обработка перемещения фигуры влево и вправо
-                if event.key == pygame.K_RIGHT:
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     X_DIRECTION += 1  # перемещение по x ->>
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     X_DIRECTION -= 1  # перемещение по x <<-
-                elif event.key == pygame.K_SPACE:  # переворачивание текущей фигуры
+                elif event.key == pygame.K_SPACE or event.key == pygame.K_w:  # переворачивание текущей фигуры
                     ROTATION = True
-
                 elif event.key == pygame.K_ESCAPE:  # ещё один выход (на Esc)
                     exit()
+                elif event.key == pygame.K_p:  # Добавлено условие для кнопки P
+                    PAUSED = not PAUSED  # Включение/выключение паузы
 
         # переворачивание текущей фигуры (по часовой стрелке, на клавишу SPACE)
         if ROTATION:
@@ -127,7 +140,11 @@ def TetrisGame():
 
         # Обработка столкновения фигуры с "полом" экрана. Если фигура упала, то она сохраняется на игровом поле в том
         # виде, в котором она приземлилась, включая цвет. Также создаём следующую фигуру
-        if FALL_CURRENT_POSITION > 2000:
+        if PAUSED:
+            screen.blit(dim_surface, (0, 0))
+            pause(screen)
+            all_items.update()
+        elif FALL_CURRENT_POSITION > 2000:
             FALL_CURRENT_POSITION = 0
             for i in range(4):
                 current_figure[i].y += 1
