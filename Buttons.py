@@ -61,7 +61,8 @@ class MenuButton(Button):
 
         # Создаём текст
         x, y = self.rect.center
-        self.text_surface, self.text_rect = create_font(size=36, text=self.image_text, x=x, y=y, smoothing=True)
+        self.text_surface, self.text_rect = create_font(font_type='files/fonts/appetite.ttf',
+                                                        size=25, text=self.image_text, x=x, y=y, smoothing=True)
 
     # Отрисовка кнопки с текстом
     def draw(self, screen):
