@@ -12,7 +12,6 @@ environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
 
 # Окно главного меню игры (самое первое окно, которое появляется при запуске игры)
 def mainMenu():
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
     # создание кнопок главного меню
     play = MenuButton(y=150, image_text='Играть')
@@ -134,7 +133,6 @@ def difficult():
 
 # Игровое окно
 def gameLobby():
-    WIDTH, HEIGHT = 1200, 700
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
     # задний фон игровой карты (лобби)
@@ -182,6 +180,7 @@ def BuilderTetris():
 
 
 if __name__ == '__main__':
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.init()
     pygame.display.set_caption('Мир Труда')  # заголовок
     screen = pygame.display.set_mode((WIDTH, HEIGHT))  # создание окна
