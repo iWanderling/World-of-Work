@@ -30,8 +30,8 @@ def TetrisGame():
     FALL_CURRENT_POSITION, FALL_SPEED = 0, 100
 
     # Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
-    dim_surface = pygame.Surface((WIDTH, HEIGHT))
-    dim_surface.set_alpha(200)  # Устанавливаем прозрачность
+    dim_surface = pygame.Surface(WINDOW_SIZE)
+    dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
     # игровое поле (нужно для отрисовки игрового процесса)
     GAME_FIELD = [[0 for x in range(WIDTH)] for y in range(HEIGHT)]
@@ -46,9 +46,9 @@ def TetrisGame():
                         [(0, 0), (-1, 0), (0, 1), (-1, -1)]]  # .-
 
     def pause(scr: pygame.surface.Surface):
+        screen.blit(dim_surface, (0, 0))  # Затемнение экрана
         pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, (255, 255, 255))
-        scr.blit(pause_text, (WIDTH + 70, HEIGHT + 50))  # отображение текста
-        scr.blit(dim_surface, (0, 0))  # Затемнение экрана
+        screen.blit(pause_text, (WIDTH + 70, HEIGHT + 50))  # отображение текста
 
     """ ПОДГОТОВКА """
 
@@ -135,16 +135,13 @@ def TetrisGame():
                 current_figure = deepcopy(old_figure)
                 break
 
+
         # движение фигуры вниз (обработка падения)
         FALL_CURRENT_POSITION += FALL_SPEED
 
         # Обработка столкновения фигуры с "полом" экрана. Если фигура упала, то она сохраняется на игровом поле в том
         # виде, в котором она приземлилась, включая цвет. Также создаём следующую фигуру
-        if PAUSED:
-            screen.blit(dim_surface, (0, 0))
-            pause(screen)
-            all_items.update()
-        elif FALL_CURRENT_POSITION > 2000:
+        if FALL_CURRENT_POSITION > 2000 and not PAUSED:
             FALL_CURRENT_POSITION = 0
             for i in range(4):
                 current_figure[i].y += 1
@@ -161,6 +158,8 @@ def TetrisGame():
                     next_brick = create_new_brick()
                     break
 
+        if PAUSED:
+            pause(screen)
         # поиск заполненных рядов в игровом поле
         row = HEIGHT - 1
         for r in range(HEIGHT - 1, -1, -1):

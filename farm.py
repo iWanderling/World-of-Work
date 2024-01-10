@@ -2,9 +2,7 @@ import pygame
 from settings import Images
 from random import random, choice, randint
 
-
 pygame.init()
-
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 500  # размеры окна
 FPS = 60  # количество кадров в секунду
@@ -16,12 +14,16 @@ player_speed = 3  # скорость игрока
 lives = 5
 score = 0
 
+# Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
+dim_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+dim_surface.set_alpha(150)  # Устанавливаем прозрачность
+
 
 # пауза
 def pause(scr: pygame.surface.Surface):
     scr.blit(dim_surface, (0, 0))  # Затемнение экрана
     pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, (255, 255, 255))
-    scr.blit(pause_text, (50, SCREEN_HEIGHT // 2 - 20))  # отображение текста
+    scr.blit(pause_text, (63, SCREEN_HEIGHT // 2 - 20))  # отображение текста
 
 
 # падающие предметы
@@ -52,6 +54,7 @@ class Items(pygame.sprite.Sprite):
         if self.rect.y > SCREEN_HEIGHT:  # обработка падения предмета (если игрок не смог поймать предмет)
             lives -= 1
             self.kill()
+
 
 # фермер
 class Farmer(pygame.sprite.Sprite):
