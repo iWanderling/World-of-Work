@@ -10,7 +10,7 @@ FONT = pygame.font.Font('files/fonts/appetite.ttf', 36)  # шрифт счётч
 
 # Игровые переменные:
 egg_speed = 3  # скорость падения предметов (зависит от выбранной сложности)
-player_speed = 3  # скорость игрока
+player_speed = 4  # скорость игрока
 lives = 5
 score = 0
 
@@ -143,12 +143,12 @@ def Happy_Farmer():
         if not paused:
             keys = pygame.key.get_pressed()
             # обрабатываем движение фермера влево
-            if keys[pygame.K_LEFT]:
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 farmer.direction = -1
                 farmer_group.update()
 
             # обрабатываем движение фермера вправо
-            elif keys[pygame.K_RIGHT]:
+            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 farmer.direction = 1
                 farmer_group.update()
 
