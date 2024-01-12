@@ -8,7 +8,7 @@ def TetrisGame():
     """ ИГРОВЫЕ НАСТРОЙКИ """
     # получаем случайный кирпичик (цвет)
     def get_random_color() -> str:
-        return 'InGames/Tetris/bricks/' + choice(('yellow_brick', 'blue_brick', 'red_brick', 'green_brick',
+        return 'bricks/' + choice(('yellow_brick', 'blue_brick', 'red_brick', 'green_brick',
                                                   'aqua_brick', 'brick', 'gray_brick', 'pink_brick')) + '.png'
 
     # функция для создания объекта - кирпичика
@@ -22,7 +22,6 @@ def TetrisGame():
     WIDTH, HEIGHT = 10, 20  # TILE
     GAME_WINDOW_SIZE = WIDTH * TILE, HEIGHT * TILE  # игровое окно
     WINDOW_SIZE = GAME_WINDOW_SIZE[0] + 200, GAME_WINDOW_SIZE[1]
-    FONT = pygame.font.Font('files/fonts/appetite.ttf', 20)
     PAUSED = False
     all_items = pygame.sprite.Group()
 
@@ -76,15 +75,18 @@ def TetrisGame():
     screen = pygame.display.set_mode(WINDOW_SIZE)  # окно
     clock = pygame.time.Clock()  # FPS
     # background of game field
-    game_window_background = pygame.transform.scale(pygame.image.load('InGames/Tetris/bricks/tetris-background-game-window.jpg'),
+    game_window_background = pygame.transform.scale(pygame.image.load('bricks/tetris-background-game-window.jpg'),
                                                     GAME_WINDOW_SIZE)
-    window_background = pygame.transform.scale(pygame.image.load('InGames/Tetris/bricks/tetris-background-window.png'), WINDOW_SIZE)
 
-    sound = pygame.mixer.Sound('InGames/Tetris/sounds/collect-row.mp3')  # звук, который проигрывается при создании целого ряда
+    window_background = pygame.transform.scale(pygame.image.load('bricks/tetris-background-window.png'), WINDOW_SIZE)
+
+    FONT = pygame.font.Font('sunday.ttf', 20)
+
+    sound = pygame.mixer.Sound('sounds/collect-row.mp3')  # звук, который проигрывается при создании целого ряда
     brick = create_new_brick()  # создание кирпичика
     next_brick = create_new_brick()
 
-    SCORE_FONT = pygame.font.Font('InGames/Tetris/sunday.ttf', 50)
+    SCORE_FONT = pygame.font.Font('sunday.ttf', 50)
     SCORE_FONT = SCORE_FONT.render(str(SCORE), True, pygame.Color('red'))
 
     while True:
@@ -134,7 +136,6 @@ def TetrisGame():
             if not check_borders(i):
                 current_figure = deepcopy(old_figure)
                 break
-
 
         # движение фигуры вниз (обработка падения)
         FALL_CURRENT_POSITION += FALL_SPEED
@@ -194,10 +195,12 @@ def TetrisGame():
             if GAME_FIELD[0][i]:
                 return False
 
-        SCORE_FONT = pygame.font.Font('InGames/Tetris/sunday.ttf', 25).render(f'Счёт: {SCORE}', True, pygame.Color('aqua'))
-        NEXT_FIGURE_FONT = pygame.font.Font('InGames/Tetris/sunday.ttf', 15).render(f'Следующая фигура', True, pygame.Color('aqua'))
+        SCORE_FONT = pygame.font.Font('sunday.ttf', 25).render(f'Счёт: {SCORE}', True, pygame.Color('aqua'))
+        NEXT_FIGURE_FONT = pygame.font.Font('sunday.ttf', 15).render(f'Следующая фигура', True, pygame.Color('aqua'))
 
         screen.blit(SCORE_FONT, (365, 10))
         screen.blit(NEXT_FIGURE_FONT, (375, 185))
         pygame.display.flip()
         clock.tick(FPS)
+
+TetrisGame()
