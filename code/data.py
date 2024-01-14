@@ -1,5 +1,10 @@
 from os import path
-from pygame import image
+from pygame import image, transform
+
+
+# задать изображению image размер size
+def sized(image, size):
+    return transform.scale(image, size)
 
 
 # функция для конвентирования изображения в pygame-формат
@@ -33,6 +38,11 @@ class Images:
 
     # Изображения игры Строительный Тетрис
     build_buttons = loader('builder', 'build.png'), loader('builder', 'build_hover.png')
+    brick_names = ('yellow_brick', 'blue_brick', 'red_brick', 'green_brick', 'aqua_brick', 'brick', 'gray_brick',
+                   'pink_brick')
+    bricks = list(loader('builder', f'{color}.png') for color in brick_names)
+    tetris_background = loader('builder', 'background.jpg')
+    tetris_fullsize_background = loader('builder', 'background_window.png')
 
     # Изображения игры Юный Инженер
     engineer_buttons = loader('engineer', 'engineer.png'), loader('engineer', 'engineer_hover.png')

@@ -1,7 +1,7 @@
-from os import environ
 from random import choice, random, randint
-# from InGames.Tetris.main import TetrisGame
+from os import environ
 from Buttons import *
+from tetris import *
 from plane import *
 from farm import *
 
@@ -80,10 +80,9 @@ def HappyFarmer():
 
 # Игра: Строительный Тетрис
 def BuilderTetris():
-    # tetris_running = TetrisGame()
-    # if not tetris_running:
-    #     gameLobby()
-    pass
+    tetris_running = TetrisGame()
+    if not tetris_running:
+        gameLobby()
 
 def Young_Avia():
     avia_running = YoungAvia()

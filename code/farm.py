@@ -1,12 +1,8 @@
 import pygame
 from os import path
-from data import Images
+from data import Images, sized
 from random import random, choice, randint
 
-
-# задать изображению image размер size
-def sized(image, size):
-    return pygame.transform.scale(image, size)
 
 # пауза
 def pause(screen):
@@ -18,12 +14,10 @@ def pause(screen):
 WIDTH, HEIGHT = pygame.display.set_mode().get_size()  # размеры окна
 egg_speed = 3  # скорость падения предметов (зависит от выбранной сложности)
 player_speed = 8  # скорость игрока
-lives = 5  # прав на ошибку
-score = 0  # счёт
 FPS = 60  # количество кадров в секунду
 size = (350, 350)  # размеры персонажа (фермера)
 
-# Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
+# Создаем отдельный поверхностный объект для затемнения экрана
 dim_surface = pygame.Surface((WIDTH, HEIGHT))
 dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
@@ -128,6 +122,7 @@ class Farmer(pygame.sprite.Sprite):
 
 # Игра: Весёлый фермер
 def Happy_Farmer():
+    global score, lives
     pygame.init()
     FONT = pygame.font.Font('../data/fonts/appetite.ttf', 36)  # шрифт счётчика
 
@@ -135,6 +130,9 @@ def Happy_Farmer():
     grass = pygame.transform.scale(Images.grass, (WIDTH, 100))
     heart_img = Images.heart  # сердца
     heart_width = heart_img.get_width()
+
+    score = 0  # счёт
+    lives = 5  # прав на ошибку
 
     # фон игры
     farm_background = pygame.transform.scale(Images.farm_background, (WIDTH, HEIGHT))
@@ -209,5 +207,3 @@ def Happy_Farmer():
         clock.tick(FPS)
         pygame.display.flip()
 
-
-Happy_Farmer()

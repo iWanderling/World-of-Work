@@ -6,7 +6,6 @@ from data import Images
 
 FPS = 180
 score = 0
-time_ = time()
 
 WIDTH, HEIGHT = pygame.display.set_mode().get_size()
 
@@ -157,6 +156,7 @@ def YoungAvia():
 
     order = [0]
 
+    time_ = time()
     clock = pygame.time.Clock()
     running = True
     while running:
