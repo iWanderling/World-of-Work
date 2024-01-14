@@ -19,11 +19,17 @@ class Images:
     # Изображения игры Весёлая Ферма
     apple = loader('farm', 'apple.png')
     egg = loader('farm', 'egg.png')
+    cabbage = loader('farm', 'cabbage.png')
+    grass = loader('farm', 'grass.png')
     farm_background = loader('farm', 'game_background.jpg')
     farm_buttons = loader('farm', 'farm.png'), loader('farm', 'farm_hover.png')
     heart = loader('farm', 'heart.png')
-    farmer_left = loader('farm', 'farmer_left.png')
-    farmer_right = loader('farm', 'farmer_right.png')
+    left = [loader('farm', f'left{i}.png') for i in range(1, 4)]  # фермер с пустой тележкой, идёт влево
+    right = [loader('farm', f'right{i}.png') for i in range(1, 4)]  # фермер с пустой тележкой, идёт вправо
+    half_left = [loader('farm', f'half_left{i}.png') for i in range(1, 4)]  # фермер с 50% тележкой, влево
+    half_right = [loader('farm', f'half_right{i}.png') for i in range(1, 4)]  # фермер с 50% тележкой, вправо
+    full_left = [loader('farm', f'full_left{i}.png') for i in range(1, 4)]  # фермер с полной тележкой, идёт влево
+    full_right = [loader('farm', f'full_right{i}.png') for i in range(1, 4)]  # фермер с полной тележкой, идёт вправо
 
     # Изображения игры Строительный Тетрис
     build_buttons = loader('builder', 'build.png'), loader('builder', 'build_hover.png')

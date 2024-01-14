@@ -1,108 +1,146 @@
 import pygame
-from random import random, choice, randint
 from os import path
-
-def loader(folder, filename):
-    address = path.join(f'..\data\images\{folder}', filename)
-    return pygame.image.load(address)
+from data import Images
+from random import random, choice, randint
 
 
-pygame.init()
-
-SCREEN_WIDTH, SCREEN_HEIGHT = pygame.display.set_mode().get_size()  # размеры окна
-FPS = 60  # количество кадров в секунду
-FONT = pygame.font.Font('../data/fonts/appetite.ttf', 36)  # шрифт счётчика
-
-# Игровые переменные:
-egg_speed = 3  # скорость падения предметов (зависит от выбранной сложности)
-player_speed = 8  # скорость игрока
-lives = 5
-score = 0
-
-# Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
-dim_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-dim_surface.set_alpha(150)  # Устанавливаем прозрачность
-
+# задать изображению image размер size
+def sized(image, size):
+    return pygame.transform.scale(image, size)
 
 # пауза
 def pause(screen):
     screen.blit(dim_surface, (0, 0))  # Затемнение экрана
     pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, 'white')
-    screen.blit(pause_text, (63, SCREEN_HEIGHT // 2 - 20))  # отображение текста
+    screen.blit(pause_text, (63, HEIGHT // 2 - 20))  # отображение текста
 
+
+WIDTH, HEIGHT = pygame.display.set_mode().get_size()  # размеры окна
+egg_speed = 3  # скорость падения предметов (зависит от выбранной сложности)
+player_speed = 8  # скорость игрока
+lives = 5  # прав на ошибку
+score = 0  # счёт
+FPS = 60  # количество кадров в секунду
+size = (350, 350)  # размеры персонажа (фермера)
+
+# Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
+dim_surface = pygame.Surface((WIDTH, HEIGHT))
+dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
 # падающие предметы
 class Items(pygame.sprite.Sprite):
-    egg_img = loader('farm', 'egg.png')
-    apple_img = loader('farm', 'apple.png')
-
-    img_list = (egg_img, apple_img)
+    img_list = (sized(Images.egg, (150, 100)), sized(Images.apple, (100, 80)), sized(Images.cabbage, (150, 130)))
 
     def __init__(self, *group):
         super().__init__(*group)
         self.image = choice(self.img_list)
-        self.image = pygame.transform.scale(self.image, (100, 80))
         self.mask = pygame.mask.from_surface(self.image)  # маска объекта
 
         self.rect = self.image.get_rect()
-        self.rect.x = randint(0, SCREEN_WIDTH - self.rect.width)
+        self.rect.x = randint(0, WIDTH - self.rect.width)
         self.rect.y = 0
 
     def update(self):
         global lives, score, farmer
         self.rect = self.rect.move(0, egg_speed)  # передвижение предмета (падение)
 
-        if pygame.sprite.collide_mask(self, farmer):  # обработка столкновения по маске
+        # обработка столкновения по маске
+        if pygame.sprite.collide_mask(self, farmer):
             score += 1
             self.kill()
 
-        if self.rect.y > SCREEN_HEIGHT:  # обработка падения предмета (если игрок не смог поймать предмет)
+        # обработка падения предмета (если игрок не смог поймать предмет)
+        if self.rect.y > HEIGHT:
             lives -= 1
             self.kill()
 
 
 # фермер
 class Farmer(pygame.sprite.Sprite):
-    farmer_left_img = loader('farm', 'farmer_left.png')  # фермер, который идёт влево
-    farmer_left_img = pygame.transform.scale(farmer_left_img, (150, 150))
+    global size
 
-    farmer_right_img = loader('farm', 'farmer_right.png')  # фермер, который идёт вправо
-    farmer_right_img = pygame.transform.scale(farmer_right_img, (150, 150))
+    empty_left = [sized(img, size) for img in Images.left]
+    empty_right = [sized(img, size) for img in Images.right]
+
+    # спрайты персонажа с наполовину полной тележкой
+    half_left = [sized(img, size) for img in Images.half_left]
+    half_right = [sized(img, size) for img in Images.half_right]
+
+    # спрайты персонажа с наполненной тележкой
+    full_left = [sized(img, size) for img in Images.full_left]
+    full_right = [sized(img, size) for img in Images.full_right]
 
     def __init__(self, *group):
         super().__init__(*group)
         self.direction = -1
+        self.anim = 0
 
-        self.image = self.farmer_left_img
-        self.mask = pygame.mask.from_surface(self.image)  # maska
+        self.left_sprites = self.empty_left[:]
+        self.right_sprites = self.empty_right[:]
+
+        self.image = self.left_sprites[self.anim]
+        self.mask = pygame.mask.from_surface(self.image)
+
         self.rect = self.image.get_rect()
+        self.rect.x = WIDTH // 2
+        self.rect.y = HEIGHT - 350
 
-        self.rect.x = SCREEN_WIDTH // 2
-        self.rect.y = SCREEN_HEIGHT - 150
+    def update(self, stay=False):
+        self.choose_sprite()
 
-    def update(self):
-        if self.direction > 0:  # передвижение влево или вправо
-            self.image = self.farmer_right_img
-        else:
-            self.image = self.farmer_left_img
+        # если персонаж не столкнулся с границей окна - анимируем его
+        if self.collide_window_border() and not stay:
+            self.anim += 0.1
+            if self.anim > 2:
+                self.anim = 0
 
-        if -5 <= self.rect.x + player_speed * self.direction <= SCREEN_WIDTH - 145:
+        # обновление персонажа, если он идёт вправо
+        if self.direction == 1:
+            self.image = self.right_sprites[int(self.anim)]
+
+        # обновление персонажа, если он идёт влево
+        elif self.direction == -1:
+            self.image = self.left_sprites[int(self.anim)]
+
+        # обновление персонажа, если он стоит
+        elif stay:
+            self.image = self.left_sprites[int(self.anim)] if self.direction < 0 else self.right_sprites[int(self.anim)]
+
+        # обновление маски изображения
+        self.mask = pygame.mask.from_surface(self.image)
+
+        if self.collide_window_border() and not stay:
             self.rect = self.rect.move(player_speed * self.direction, 0)
 
+    def choose_sprite(self):
+        global score
+        if 5 <= score <= 15:
+            self.left_sprites = self.half_left[:]
+            self.right_sprites = self.half_right[:]
+
+        elif score > 15:
+            self.left_sprites = self.full_left
+            self.right_sprites = self.full_right
+
+    # проверка столкновения персонажа с границами окна игры
+    def collide_window_border(self):
+        return -19 <= self.rect.x + player_speed * self.direction <= WIDTH - 335
 
 # Игра: Весёлый фермер
 def Happy_Farmer():
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.init()
+    FONT = pygame.font.Font('../data/fonts/appetite.ttf', 36)  # шрифт счётчика
 
-    heart_img = loader('farm', 'heart.png')  # сердца
-    heart_width, heart_height = heart_img.get_size()  # размеры сердец
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    grass = pygame.transform.scale(Images.grass, (WIDTH, 100))
+    heart_img = Images.heart  # сердца
+    heart_width = heart_img.get_width()
 
     # фон игры
-    farm_background = loader('farm', 'game_background.jpg')
-    farm_background = pygame.transform.scale(farm_background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    farm_background = pygame.transform.scale(Images.farm_background, (WIDTH, HEIGHT))
 
     # Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
-    dim_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    dim_surface = pygame.Surface((WIDTH, HEIGHT))
     dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
     paused = False  # поставлена ли игра на паузу
@@ -119,7 +157,8 @@ def Happy_Farmer():
     while running:
         anim += 1
         # отрисовка всех изображений на экране
-        screen.blit(farm_background, (0, 0))
+        screen.blit(farm_background, (0, 0))  # отрисовка фона
+        screen.blit(grass, (0, HEIGHT - 100))  # отрисовка травы (это не то, о чём вы подумали)
         all_items.draw(screen)
         farmer_group.draw(screen)
 
@@ -134,7 +173,7 @@ def Happy_Farmer():
             all_items.update()
 
         # отображение счета в углу
-        screen.blit(FONT.render(f"Счёт: {score}", True, (0, 0, 0)), (SCREEN_WIDTH - 150, 10))
+        screen.blit(FONT.render(f"Счёт: {score}", True, (0, 0, 0)), (WIDTH - 150, 10))
 
         # обработка событий
         for event in pygame.event.get():
@@ -146,16 +185,18 @@ def Happy_Farmer():
 
         # если игра не на паузе - продолжаем обработку событий:
         if not paused:
+            stay = False
             keys = pygame.key.get_pressed()
             # обрабатываем движение фермера влево
             if keys[pygame.K_LEFT]:
                 farmer.direction = -1
-                farmer_group.update()
-
             # обрабатываем движение фермера вправо
             elif keys[pygame.K_RIGHT]:
                 farmer.direction = 1
-                farmer_group.update()
+            # если фермер вообще не движется
+            else:
+                stay = True
+            farmer_group.update(stay)
 
             # Добавление нового яйца с вероятностью 2% (за один игровой кадр)
             if random() < 0.02:
@@ -167,3 +208,6 @@ def Happy_Farmer():
 
         clock.tick(FPS)
         pygame.display.flip()
+
+
+Happy_Farmer()
