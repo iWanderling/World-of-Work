@@ -47,6 +47,10 @@ class Detail(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
+        self.sound = pygame.mixer.Sound('../data/sounds/svarka.mp3')
+        self.incorrect_sound = pygame.mixer.Sound('../data/sounds/plane_incorrect.mp3')
+        self.incorrect_sound.set_volume(0.3)
+
     def update(self, event):
         mouse_pos = pygame.mouse.get_pos()
 
@@ -69,10 +73,15 @@ class Detail(pygame.sprite.Sprite):
         # иначе - возвращаем деталь на место
         if event.type == pygame.MOUSEBUTTONUP:
             self.moving = False
+            if pygame.sprite.collide_mask(self, stand) and self.queue != order[-1] + 1:
+                self.incorrect_sound.play()
+
             if not pygame.sprite.collide_mask(self, stand) or self.queue != order[-1] + 1:
                 self.rect.x, self.rect.y = self.initial_coordinates
             else:
                 order.append(self.queue)
+                if 1 < self.queue < 6:
+                    self.sound.play()
                 self.kill()
 
 

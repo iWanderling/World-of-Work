@@ -128,9 +128,12 @@ class Farmer(pygame.sprite.Sprite):
 def HappyFarmer(function):
     global score, lives, farmer
     pygame.init()
+    pygame.mixer.stop()
     font_scale = 36
     FONT = pygame.font.Font('../data/fonts/appetite.ttf', font_scale)  # шрифт счётчика
-
+    farm_sound = pygame.mixer.Sound('../data/sounds/farm_sound.mp3')
+    farm_sound.set_volume(0.5)
+    farm_sound.play()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     grass = pygame.transform.scale(Images.grass, (WIDTH, 100))
     heart_img = Images.heart  # сердца
@@ -213,6 +216,7 @@ def HappyFarmer(function):
         pygame.display.flip()
 
     def game_over():
+        pygame.mixer.stop()
         # Создаем отдельный поверхностный объект для затемнения экрана
         dim_surface = pygame.Surface((WIDTH, HEIGHT))
         dim_surface.set_alpha(150)  # Устанавливаем прозрачность

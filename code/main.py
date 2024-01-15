@@ -4,14 +4,16 @@ from tetris import *
 from plane import *
 from farm import *
 
+import sqlite3
+
 environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
 play = True
 
 
 # Окно ввода имени (самое первое окно, которое появляется при запуске игры)
-def getPlayerName():
-    if hasattr(getPlayerName, 'name_entered') and getPlayerName.name_entered:
-        return getPlayerName.name_entered
+def setPlayerName():
+    if hasattr(setPlayerName, 'name_entered') and setPlayerName.name_entered:
+        return setPlayerName.name_entered
 
     input_box_width = 300
     input_box_height = 32
@@ -34,7 +36,7 @@ def getPlayerName():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     active = False
-                    getPlayerName.name_entered = text
+                    setPlayerName.name_entered = text
                 elif event.key == pygame.K_BACKSPACE:
                     text = text[:-1]
                 else:
@@ -47,9 +49,15 @@ def getPlayerName():
 
         pygame.draw.rect(screen, color, input_box, 2)
         pygame.draw.rect(screen, color, input_box)
+
         text_surface = font_input.render(text, True, (255, 255, 255))
         screen.blit(text_surface, (input_box.x + 10, input_box.y + 5))
         pygame.display.flip()
+
+    text = text.capitalize()
+
+    with open('../settings/username.txt', 'w') as f:
+        f.write(text)
 
     # Отображение приветственного сообщения после нажатия клавиши ENTER
     welcome_font = pygame.font.Font(None, 36)
@@ -57,11 +65,9 @@ def getPlayerName():
     welcome_rect = welcome_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
     screen.blit(welcome_text, welcome_rect)
     pygame.display.flip()
+    pygame.time.delay(1000)
 
-    pygame.time.delay(2000)
-
-    return text
-
+    mainMenu()
 
 # Окно главного меню игры
 def mainMenu():
@@ -90,7 +96,7 @@ def mainMenu():
 # Окно с игровыми настройками
 def settingsMenu():
     settings_group = pygame.sprite.Group()
-    Button(settings_group, func=lambda x: x, y=225, text='Ничего')
+    Button(settings_group, func=setPlayerName, y=225, text='Изменить имя')
     Button(settings_group, func=mainMenu, y=325, text='Назад')
 
     running = True
@@ -141,11 +147,15 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode()  # создание окна
     WIDTH, HEIGHT = screen.get_size()
 
-    player_name = getPlayerName()
-
     # задний фон главного меню
     menu_background = Images.menu_background
     menu_background = pygame.transform.scale(menu_background, (WIDTH, HEIGHT))
 
-    # запуск игры (начало игры с главного меню)
-    mainMenu()
+    # сохраняем имя пользователя, если его ещё нет
+    with open('../settings/username.txt') as username:
+        username = username.read()
+        if not username:
+            setPlayerName()
+        else:
+            # запуск игры (начало игры с главного меню)
+            mainMenu()

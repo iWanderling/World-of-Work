@@ -5,7 +5,6 @@ import pygame
 from button import Button
 
 def TetrisGame(function):
-
     # Размеры окон
     WINDOW_SIZE = pygame.display.set_mode().get_size()
     WIDTH, HEIGHT = WINDOW_SIZE
@@ -64,9 +63,10 @@ def TetrisGame(function):
 
     """ ИНИЦИАЛИЗАЦИЯ И ОСНОВНОЙ КОД """
     pygame.init()
+    pygame.mixer.stop()
     pygame.display.set_caption('Тетрис - Юный Строитель')
     screen = pygame.display.set_mode(WINDOW_SIZE)  # окно
-    clock = pygame.time.Clock()  # FPS
+
     # фон всего игрового окна
     game_window_background = pygame.transform.scale(Images.tetris_background, GAME_WINDOW_SIZE)
     window_background = pygame.transform.scale(Images.tetris_fullsize_background, WINDOW_SIZE)
@@ -74,12 +74,21 @@ def TetrisGame(function):
     font_scale = 35
     FONT = pygame.font.Font(f'..\data\{"fonts"}\{"sunday.ttf"}', font_scale)
 
-    sound = pygame.mixer.Sound('../data/sounds/collect-row.mp3')  # звук, который проигрывается при создании целого ряда
     brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))  # создание кирпичика
     next_brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))
 
+    fall_sound = pygame.mixer.Sound('../data/sounds/fall.mp3')  # звук падения фигуры
+    sound = pygame.mixer.Sound('../data/sounds/collect-row.mp3')  # звук, который проигрывается при создании ряда
+    end_music = pygame.mixer.Sound('../data/sounds/builder_end.mp3')  # конец игры
+    game_music = pygame.mixer.Sound('../data/sounds/builder_music.mp3')  # игровая музыка
+    game_music.set_volume(0.1)
+    game_music.play()
+    clock = pygame.time.Clock()  # FPS
     running = True
     while running:
+        is_row_collected = False  # собран ли ряд
+        is_fall = False  # упала ли фигура
+
         screen.blit(window_background, (0, 0))
         screen.blit(game_window_background, (step_x, step_y))
 
@@ -137,6 +146,7 @@ def TetrisGame(function):
             for i in range(4):
                 current_figure[i].y += 1
                 if not check_borders(i):
+                    is_fall = True
                     for i in range(4):
                         # запоминаем позицию и цвет упавшей фигуры, сохраняем её на поле
                         GAME_FIELD[old_figure[i].y][old_figure[i].x] = brick
@@ -164,9 +174,13 @@ def TetrisGame(function):
                 row -= 1
             # проигрываем звук если создан полный ряд
             else:
+                is_row_collected = True
                 sound.play()
                 ROWS += 1
                 SCORE = ROWS * 100
+
+        if not is_row_collected and is_fall:
+            fall_sound.play()
 
         # отрисовка игрового поля
         for y, row in enumerate(GAME_FIELD):
@@ -204,6 +218,8 @@ def TetrisGame(function):
         clock.tick(FPS)
 
     def game_over():
+        pygame.mixer.stop()
+        end_music.play()
         # Создаем отдельный поверхностный объект для затемнения экрана
         dim_surface = pygame.Surface((WIDTH, HEIGHT))
         dim_surface.set_alpha(150)  # Устанавливаем прозрачность
@@ -218,8 +234,8 @@ def TetrisGame(function):
             screen.blit(dim_surface, (0, 0))
             buttons.draw(screen)
 
-            game_over_text = FONT.render(f'Время вышло!', True, 'aqua')
-            score_text = FONT.render(f'Набрано очков: {SCORE}', True, 'pink')
+            game_over_text = FONT.render(f'Конец игры!', True, 'aqua')
+            score_text = FONT.render(f'Набрано очков: {SCORE}', True, 'aqua')
             screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 5))
             screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 4 + 25))
 
