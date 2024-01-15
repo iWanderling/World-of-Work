@@ -1,15 +1,69 @@
-from random import choice, random, randint
 from os import environ
 from button import *
 from tetris import *
 from plane import *
 from farm import *
 
-
 environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
 play = True
 
-# Окно главного меню игры (самое первое окно, которое появляется при запуске игры)
+
+# Окно ввода имени (самое первое окно, которое появляется при запуске игры)
+def getPlayerName():
+    if hasattr(getPlayerName, 'name_entered') and getPlayerName.name_entered:
+        return getPlayerName.name_entered
+
+    input_box_width = 300
+    input_box_height = 32
+    input_box = pygame.Rect((WIDTH - input_box_width) // 2, HEIGHT // 2, input_box_width, input_box_height)
+    color_inactive = pygame.Color('lightskyblue3')
+    color = color_inactive
+    active = True
+    text = ''
+    font_input = pygame.font.Font(None, 32)
+
+    # Инструкция
+    font_instruction = pygame.font.Font(None, 24)
+    instruction_text = font_instruction.render("Введи своё имя в поле ниже и нажми ENTER", True, (255, 255, 255))
+    instruction_rect = instruction_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+
+    while active:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    active = False
+                    getPlayerName.name_entered = text
+                elif event.key == pygame.K_BACKSPACE:
+                    text = text[:-1]
+                else:
+                    text += event.unicode
+
+        screen.fill((30, 30, 30))
+
+        # Отображение текста инструкции
+        screen.blit(instruction_text, instruction_rect)
+
+        pygame.draw.rect(screen, color, input_box, 2)
+        pygame.draw.rect(screen, color, input_box)
+        text_surface = font_input.render(text, True, (255, 255, 255))
+        screen.blit(text_surface, (input_box.x + 10, input_box.y + 5))
+        pygame.display.flip()
+
+    # Отображение приветственного сообщения после нажатия клавиши ENTER
+    welcome_font = pygame.font.Font(None, 36)
+    welcome_text = welcome_font.render(f"Добро пожаловать, {text}!", True, (255, 255, 255))
+    welcome_rect = welcome_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
+    screen.blit(welcome_text, welcome_rect)
+    pygame.display.flip()
+
+    pygame.time.delay(2000)
+
+    return text
+
+
+# Окно главного меню игры
 def mainMenu():
     global play
     menu_group = pygame.sprite.Group()
@@ -86,6 +140,8 @@ if __name__ == '__main__':
     pygame.display.set_caption('Мир Труда')  # заголовок
     screen = pygame.display.set_mode()  # создание окна
     WIDTH, HEIGHT = screen.get_size()
+
+    player_name = getPlayerName()
 
     # задний фон главного меню
     menu_background = Images.menu_background
