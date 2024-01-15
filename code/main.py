@@ -12,9 +12,6 @@ play = True
 
 # Окно ввода имени (самое первое окно, которое появляется при запуске игры)
 def setPlayerName():
-    if hasattr(setPlayerName, 'name_entered') and setPlayerName.name_entered:
-        return setPlayerName.name_entered
-
     input_box_width = 300
     input_box_height = 32
     input_box = pygame.Rect((WIDTH - input_box_width) // 2, HEIGHT // 2, input_box_width, input_box_height)
@@ -69,6 +66,7 @@ def setPlayerName():
 
     mainMenu()
 
+
 # Окно главного меню игры
 def mainMenu():
     global play
@@ -80,10 +78,23 @@ def mainMenu():
         sound = pygame.mixer.Sound('../data/sounds/menu.mp3')
         sound.play()
         play = False
+
+    # Load player name
+    with open('../settings/username.txt') as username_file:
+        player_name = username_file.read()
+
+    # Display player name in the bottom corner
+    font_player_name = pygame.font.Font(None, 24)
+    player_name_text = font_player_name.render(f"Игрок: {player_name}", True, (255, 255, 255))
+    player_name_rect = player_name_text.get_rect(bottomleft=(10, HEIGHT - 10))
+    screen.blit(player_name_text, player_name_rect)
+
     running = True
     while running:
         screen.blit(menu_background, (0, 0))
         menu_group.draw(screen)
+
+        screen.blit(player_name_text, player_name_rect)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
