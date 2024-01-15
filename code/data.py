@@ -16,10 +16,13 @@ def loader(folder, name):
 # Класс для хранения всех изображений, задействованных в игре
 class Images:
     # Изображения интерфейса
-    arrow_left = loader('interface', 'arrow_left.png')
+    arrow_left = [loader('interface', 'arrow_left.png'), loader('interface', 'arrow_left_hover.png')]
     menu_background = loader('interface', 'menu.jpg')
     lobby_background = loader('interface', 'lobby.png')
     menu_buttons = loader('interface', 'button.png'), loader('interface', 'button_hover.png')
+    farm_over_buttons = loader('interface', 'farm.png'), loader('interface', 'farm_hover.png')
+    builder_over_buttons = loader('interface', 'builder.png'), loader('interface', 'builder_hover.png')
+    plane_over_buttons = loader('interface', 'plane.png'), loader('interface', 'plane_hover.png')
 
     # Изображения игры Весёлая Ферма
     apple = loader('farm', 'apple.png')

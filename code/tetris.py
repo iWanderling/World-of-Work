@@ -2,9 +2,9 @@ from copy import deepcopy
 from random import choice
 from data import Images
 import pygame
+from button import Button
 
-
-def TetrisGame():
+def TetrisGame(function):
 
     # Размеры окон
     WINDOW_SIZE = pygame.display.set_mode().get_size()
@@ -71,16 +71,15 @@ def TetrisGame():
     game_window_background = pygame.transform.scale(Images.tetris_background, GAME_WINDOW_SIZE)
     window_background = pygame.transform.scale(Images.tetris_fullsize_background, WINDOW_SIZE)
 
-    FONT = pygame.font.Font(f'..\data\{"fonts"}\{"sunday.ttf"}', 20)
+    font_scale = 35
+    FONT = pygame.font.Font(f'..\data\{"fonts"}\{"sunday.ttf"}', font_scale)
 
     sound = pygame.mixer.Sound('../data/sounds/collect-row.mp3')  # звук, который проигрывается при создании целого ряда
     brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))  # создание кирпичика
     next_brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))
 
-    SCORE_FONT = pygame.font.Font(f'..\data\{"fonts"}\{"sunday.ttf"}', 50)
-    SCORE_FONT = SCORE_FONT.render(str(SCORE), True, pygame.Color('red'))
-
-    while True:
+    running = True
+    while running:
         screen.blit(window_background, (0, 0))
         screen.blit(game_window_background, (step_x, step_y))
 
@@ -176,21 +175,13 @@ def TetrisGame():
                     figure_rect.x, figure_rect.y = x * TILE + step_x, y * TILE + step_y
                     screen.blit(col, figure_rect)
 
-        # проверка окончания игры
-        for i in range(TILE_WIDTH):
-            if GAME_FIELD[0][i]:
-                return False
-
-        SCORE_FONT = pygame.font.Font(f'..\data\{"fonts"}\{"sunday.ttf"}', 35)
-        SCORE_FONT = SCORE_FONT.render(f'Текущий счёт: {SCORE}', True, pygame.Color('aqua'))
+        SCORE_FONT = FONT.render(f'Текущий счёт: {SCORE}', True, pygame.Color('aqua'))
         w1, h1 = SCORE_FONT.get_size()  # размеры шрифта SCORE_FONT
 
-        NEXT_FIGURE_FONT = pygame.font.Font(f'..\data\{"fonts"}\{"sunday.ttf"}', 35)
-        NEXT_FIGURE_FONT = NEXT_FIGURE_FONT.render(f'Следующая фигура', True, pygame.Color('aqua'))
+        NEXT_FIGURE_FONT = FONT.render(f'Следующая фигура', True, pygame.Color('aqua'))
         w2, h2 = NEXT_FIGURE_FONT.get_size()  # размеры шрифта NEXT_FIGURE_FONT
 
-        GAME_TITLE = pygame.font.Font(f'..\data\{"fonts"}\{"sunday.ttf"}', 35)
-        GAME_TITLE = GAME_TITLE.render('Строительный Тетрис', True, pygame.Color('aqua'))
+        GAME_TITLE = FONT.render('Строительный Тетрис', True, pygame.Color('aqua'))
         w3, h3 = GAME_TITLE.get_size()
 
         screen.blit(SCORE_FONT, (step_x // 2 - w1 // 2, HEIGHT // 2 - h1 // 2))
@@ -203,5 +194,44 @@ def TetrisGame():
             figure_rect.y = next_figure[i].y * TILE + HEIGHT // 2 + TILE * 2
             screen.blit(next_brick, figure_rect)
 
+        # проверка окончания игры
+        for i in range(TILE_WIDTH):
+            if GAME_FIELD[0][i]:
+                running = False
+                break
+
         pygame.display.flip()
         clock.tick(FPS)
+
+    def game_over():
+        # Создаем отдельный поверхностный объект для затемнения экрана
+        dim_surface = pygame.Surface((WIDTH, HEIGHT))
+        dim_surface.set_alpha(150)  # Устанавливаем прозрачность
+
+        buttons = pygame.sprite.Group()
+        img = Images.builder_over_buttons
+        Button(buttons, func=TetrisGame, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
+        Button(buttons, func=function, images=img, y=HEIGHT // 2 + 50, text='Меню')
+        game_over = True
+        while game_over:
+            screen.blit(window_background, (0, 0))
+            screen.blit(dim_surface, (0, 0))
+            buttons.draw(screen)
+
+            game_over_text = FONT.render(f'Время вышло!', True, 'aqua')
+            score_text = FONT.render(f'Набрано очков: {SCORE}', True, 'pink')
+            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 5))
+            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 4 + 25))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        game_over = False
+                buttons.update(event)
+
+            clock.tick(FPS)
+            pygame.display.flip()
+
+    game_over()

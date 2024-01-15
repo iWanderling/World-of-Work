@@ -1,8 +1,8 @@
 import pygame
-from random import shuffle
 from time import time
 from data import Images
-
+from random import shuffle
+from button import Button
 
 FPS = 180
 score = 0
@@ -129,7 +129,7 @@ class Plane(pygame.sprite.Sprite):
             self.kill()
 
 
-def YoungAvia():
+def YoungAvia(function):
     global stand, order
     pygame.init()
     screen = pygame.display.set_mode()
@@ -194,7 +194,7 @@ def YoungAvia():
 
             order = [0]
 
-        timer = 15 - int(time() - time_)
+        timer = 3 - int(time() - time_)
 
         timer_text = FONT.render(f'Осталось секунд: {timer}', True, 'white')
         score_text = FONT.render(f'Построено cамолётов: {score}', True, 'white')
@@ -211,22 +211,35 @@ def YoungAvia():
         clock.tick(FPS)
         pygame.display.flip()
 
-    # Создаем отдельный поверхностный объект для затемнения экрана
-    dim_surface = pygame.Surface((WIDTH, HEIGHT))
-    dim_surface.set_alpha(150)  # Устанавливаем прозрачность
-    game_over = True
-    while game_over:
-        screen.blit(back, (0, 0))
-        screen.blit(dim_surface, (0, 0))
+    # Вложенная функция для обработки действий игрока после окончания игры:
+    def game_over():
+        # Создаем отдельный поверхностный объект для затемнения экрана
+        dim_surface = pygame.Surface((WIDTH, HEIGHT))
+        dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
-        game_over_text = FONT.render(f'Время вышло!', True, 'white')
-        screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 4))
-        screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 3))
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game_over = False
-                pygame.quit()
+        buttons = pygame.sprite.Group()
+        img = Images.plane_over_buttons
+        Button(buttons, func=YoungAvia, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
+        Button(buttons, func=function, images=img, y=HEIGHT // 2 + 50, text='Меню')
+        game_over = True
+        while game_over:
+            screen.blit(back, (0, 0))
+            screen.blit(dim_surface, (0, 0))
+            buttons.draw(screen)
 
-        clock.tick(FPS)
-        pygame.display.flip()
-        return False
+            game_over_text = FONT.render(f'Время вышло!', True, 'white')
+            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 4))
+            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 3))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        game_over = False
+                buttons.update(event)
+
+            clock.tick(FPS)
+            pygame.display.flip()
+
+    game_over()

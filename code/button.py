@@ -8,11 +8,12 @@ WIDTH, HEIGHT = pygame.display.set_mode().get_size()
 
 # Класс для создания кнопок. От него идут классы для создания кнопок меню и локаций (func - функция, привязана к кнопке)
 class Button(pygame.sprite.Sprite):
-    def __init__(self, *group, func, images=Images.menu_buttons, x=WIDTH // 2 - 75, text=None, y=HEIGHT // 2 - 150,
-                 size=(150, 75)):
+    def __init__(self, *group, func, par=None,
+                 images=Images.menu_buttons, x=WIDTH // 2 - 75, text=None, y=HEIGHT // 2 - 150, size=(150, 75)):
 
         super().__init__(*group)
         self.pressed = False
+        self.parameter = par  # параметр функции (используется в играх)
         self.stock_image = pygame.transform.scale(images[0], size)
         self.hover_image = pygame.transform.scale(images[1], size)
         self.function = func
@@ -26,7 +27,7 @@ class Button(pygame.sprite.Sprite):
 
         # Создаём текст на кнопке, если он задан
         if text is not None:
-            font = pygame.font.Font(path.join(f'..\data\{"fonts"}', 'appetite.ttf'), 26)  # создаём шрифт
+            font = pygame.font.Font(path.join(f'..\data\{"fonts"}', 'appetite.ttf'), 20)  # создаём шрифт
             self.text_surface = font.render(text, True, 'white')
             self.text_rect = self.text_surface.get_rect()
             width, height = self.rect.size
@@ -55,4 +56,7 @@ class Button(pygame.sprite.Sprite):
             self.pressed = False
 
     def handler(self):
-        self.function()
+        if self.parameter is not None:
+            self.function(self.parameter)
+        else:
+            self.function()

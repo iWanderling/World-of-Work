@@ -1,6 +1,6 @@
 from random import choice, random, randint
 from os import environ
-from Buttons import *
+from button import *
 from tetris import *
 from plane import *
 from farm import *
@@ -55,10 +55,15 @@ def gameLobby():
 
     size = (350, 350)
     lobby_group = pygame.sprite.Group()
-    Button(lobby_group, func=Happy_Farmer, images=Images.farm_buttons, x=100, size=size)  # локация фермера
-    Button(lobby_group, func=BuilderTetris, images=Images.build_buttons, x=WIDTH // 2 - 150, size=size)  # строитель
-    Button(lobby_group, func=Young_Avia, images=Images.engineer_buttons, x=WIDTH - 400, size=size)  # инженер
-    Button(lobby_group, func=mainMenu, images=[Images.arrow_left, Images.arrow_left], x=0, y=0, size=(50, 50))  # назад
+
+    # локация фермера
+    Button(lobby_group, func=HappyFarmer, par=gameLobby, images=Images.farm_buttons, x=100, size=size)
+    # локация строителя
+    Button(lobby_group, func=TetrisGame, par=gameLobby, images=Images.build_buttons, x=WIDTH // 2 - 150, size=size)
+    # локация инженера
+    Button(lobby_group, func=YoungAvia, par=gameLobby, images=Images.engineer_buttons, x=WIDTH - 400, size=size)
+    # кнопка "назад"
+    Button(lobby_group, func=mainMenu, images=Images.arrow_left, x=0, y=0, size=(50, 50))
 
     running = True
     while running:
@@ -70,24 +75,6 @@ def gameLobby():
                 pygame.quit()
             lobby_group.update(event)
         pygame.display.flip()
-
-
-def HappyFarmer():
-    farm_running = Happy_Farmer()
-    if not farm_running:
-        gameLobby()
-
-
-# Игра: Строительный Тетрис
-def BuilderTetris():
-    tetris_running = TetrisGame()
-    if not tetris_running:
-        gameLobby()
-
-def Young_Avia():
-    avia_running = YoungAvia()
-    if not avia_running:
-        gameLobby()
 
 
 if __name__ == '__main__':

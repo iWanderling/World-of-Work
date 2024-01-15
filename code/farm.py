@@ -1,6 +1,7 @@
 import pygame
 from os import path
 from data import Images, sized
+from button import Button
 from random import random, choice, randint
 
 
@@ -121,10 +122,11 @@ class Farmer(pygame.sprite.Sprite):
         return -19 <= self.rect.x + player_speed * self.direction <= WIDTH - 335
 
 # Игра: Весёлый фермер
-def Happy_Farmer():
-    global score, lives
+def HappyFarmer(function):
+    global score, lives, farmer
     pygame.init()
-    FONT = pygame.font.Font('../data/fonts/appetite.ttf', 36)  # шрифт счётчика
+    font_scale = 36
+    FONT = pygame.font.Font('../data/fonts/appetite.ttf', font_scale)  # шрифт счётчика
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     grass = pygame.transform.scale(Images.grass, (WIDTH, 100))
@@ -145,7 +147,6 @@ def Happy_Farmer():
     all_items = pygame.sprite.Group()  # все падающие предметы
 
     farmer_group = pygame.sprite.Group()  # фермер
-    global farmer
     farmer = Farmer(farmer_group)  # экземпляр класса фермера
 
     # Главный цикл игры
@@ -202,8 +203,42 @@ def Happy_Farmer():
 
             # если количество жизней кончилось - завершаем игру
             if not lives:
-                return False
+                running = False
+                break
 
         clock.tick(FPS)
         pygame.display.flip()
+
+    def game_over():
+        # Создаем отдельный поверхностный объект для затемнения экрана
+        dim_surface = pygame.Surface((WIDTH, HEIGHT))
+        dim_surface.set_alpha(150)  # Устанавливаем прозрачность
+
+        buttons = pygame.sprite.Group()
+        img = Images.farm_over_buttons
+        Button(buttons, func=HappyFarmer, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
+        Button(buttons, func=function, images=img, y=HEIGHT // 2 + 50, text='Меню')
+        game_over = True
+        while game_over:
+            screen.blit(farm_background, (0, 0))
+            screen.blit(dim_surface, (0, 0))
+            buttons.draw(screen)
+
+            game_over_text = FONT.render(f'Время вышло!', True, 'white')
+            score_text = FONT.render(f'Словлено продуктов: {score}', True, 'white')
+            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 4))
+            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 3))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        game_over = False
+                buttons.update(event)
+
+            clock.tick(FPS)
+            pygame.display.flip()
+
+    game_over()
 
