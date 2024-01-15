@@ -116,6 +116,7 @@ class Plane(pygame.sprite.Sprite):
             self.image = pygame.transform.scale(self.progress[index], (700, 300))
         else:
             self.fly = True
+            self.image = pygame.transform.scale(self.progress[-1], (700, 300))
 
         if self.fly:
             if self.play_sound_flag:
@@ -194,7 +195,7 @@ def YoungAvia(function):
 
             order = [0]
 
-        timer = 3 - int(time() - time_)
+        timer = 10 - int(time() - time_)
 
         timer_text = FONT.render(f'Осталось секунд: {timer}', True, 'white')
         score_text = FONT.render(f'Построено cамолётов: {score}', True, 'white')

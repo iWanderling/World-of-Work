@@ -35,6 +35,8 @@ class Items(pygame.sprite.Sprite):
         self.rect.x = randint(0, WIDTH - self.rect.width)
         self.rect.y = 0
 
+        self.sound = pygame.mixer.Sound('../data/sounds/catch.mp3')
+
     def update(self):
         global lives, score, farmer
         self.rect = self.rect.move(0, egg_speed)  # передвижение предмета (падение)
@@ -43,6 +45,7 @@ class Items(pygame.sprite.Sprite):
         if pygame.sprite.collide_mask(self, farmer):
             score += 1
             self.kill()
+            self.sound.play()
 
         # обработка падения предмета (если игрок не смог поймать предмет)
         if self.rect.y > HEIGHT:

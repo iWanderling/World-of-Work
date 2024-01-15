@@ -7,15 +7,19 @@ from farm import *
 
 
 environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
-
+play = True
 
 # Окно главного меню игры (самое первое окно, которое появляется при запуске игры)
 def mainMenu():
+    global play
     menu_group = pygame.sprite.Group()
     Button(menu_group, func=gameLobby, y=HEIGHT // 4, text='Играть')  # играть
     Button(menu_group, func=settingsMenu, y=HEIGHT // 2.5, text='Настройки')  # настройки
     Button(menu_group, func=pygame.quit, y=HEIGHT // 1.8, text='Выход')  # выход
-
+    if play:
+        sound = pygame.mixer.Sound('../data/sounds/menu.mp3')
+        sound.play()
+        play = False
     running = True
     while running:
         screen.blit(menu_background, (0, 0))

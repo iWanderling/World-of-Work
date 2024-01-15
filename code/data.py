@@ -56,7 +56,7 @@ class Images:
     airplane3 = loader('engineer', 'plane_no_wings.png')
     airplane4 = loader('engineer', 'plane_no_engine.png')
     airplane5 = loader('engineer', 'airplane.png')
-    airplane6 = airplane5
+    airplane6 = loader('engineer', 'full_airplane.png')
     fuselage = loader('engineer', 'fuselage.png')
     cabine = loader('engineer', 'cabine.png')
     rudder = loader('engineer', 'rudder.png')
