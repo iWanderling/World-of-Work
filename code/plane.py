@@ -1,9 +1,9 @@
 import pygame
+import sqlite3
 from time import time
 from data import Images
-from random import shuffle
 from button import Button
-
+from random import shuffle
 
 FPS = 180
 WIDTH, HEIGHT = pygame.display.set_mode().get_size()
@@ -140,9 +140,20 @@ class Plane(pygame.sprite.Sprite):
 
 def YoungAvia(function):
     global stand, order, score
+
+    # инициализация игры
     pygame.init()
+    pygame.display.set_caption('Юный Авиаинженер')
     screen = pygame.display.set_mode()
     WIDTH, HEIGHT = screen.get_size()
+
+    # подключение к БД
+    connect = sqlite3.connect('../settings/records.sqlite')
+    cursor = connect.cursor()
+    data = cursor.execute('SELECT * from data WHERE game="engineer"').fetchone()
+    record = data[2]
+
+    # счёт игры
     score = 0
 
     # Шрифт
@@ -172,7 +183,8 @@ def YoungAvia(function):
 
     # работа с временем
     time_ = time()
-    timer_index = 30
+    timer_index = 30  # 30 секунд + 5 за каждый собранный самолёт
+    add_bonus_time = True  # флаг для добавления бонусного времени
     clock = pygame.time.Clock()
 
     running = True
@@ -192,16 +204,21 @@ def YoungAvia(function):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-                pygame.quit()
-                break
+                exit()
 
             details_group.update(event)  # обновление деталей
 
         if len(order) >= order_len:
             plane.update(order[-1])
 
+        # добавляем бонусное время, если самолёт собран
+        if plane.fly and add_bonus_time:
+            timer_index += 5  # секунд
+            add_bonus_time = False
+
         if not len(plane.groups()):
-            timer_index += 5  # бонусное время
+            add_bonus_time = True
+
             # детали самолёта
             details_group = generate_details()
 
@@ -242,14 +259,25 @@ def YoungAvia(function):
         Button(buttons, func=YoungAvia, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
         Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
         game_over = True
+
+        # создание шрифтов
+        game_over_text = FONT.render(f'Время вышло!', True, 'white')
+        score_text = FONT.render(f'Набрано очков: {score}', True, 'white')
+        if score > record:
+            record_text = FONT.render(f'Новый рекорд: {score}!', True, 'white')
+            cursor.execute(f'UPDATE data SET record={score} WHERE game="engineer"')
+            connect.commit()
+        else:
+            record_text = FONT.render(f'Лучший рекорд: {record}', True, 'white')
+
         while game_over:
             screen.blit(back, (0, 0))
             screen.blit(dim_surface, (0, 0))
             buttons.draw(screen)
 
-            game_over_text = FONT.render(f'Время вышло!', True, 'white')
-            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 4))
-            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 3))
+            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 5))
+            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 4))
+            screen.blit(record_text, (WIDTH // 2 - record_text.get_width() // 1.9, HEIGHT // 3.4))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

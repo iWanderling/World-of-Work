@@ -139,7 +139,16 @@ class Farmer(pygame.sprite.Sprite):
 # Игра: Весёлый фермер
 def HappyFarmer(function):
     global score, lives, farmer, FONT
+
+    # подключение к БД
+    connect = sqlite3.connect('../settings/records.sqlite')
+    cursor = connect.cursor()
+    data = cursor.execute('SELECT * from data WHERE game="farmer"').fetchone()
+    record = data[2]
+
+    # инициализация игры
     pygame.init()
+    pygame.display.set_caption('Весёлая ферма')
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
     # звук игры
@@ -195,7 +204,7 @@ def HappyFarmer(function):
         # обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
                     paused = not paused
@@ -239,22 +248,25 @@ def HappyFarmer(function):
         # создаём шрифты
         game_over_text = FONT.render(f'Время вышло!', True, 'white')
         score_text = FONT.render(f'Словлено продуктов: {score}', True, 'white')
-
+        if score > record:
+            cursor.execute(f'UPDATE data SET record={score} WHERE game="farmer"')
+            connect.commit()
+            record_text = FONT.render(f'Новый рекорд: {score}!', True, 'white')
+        else:
+            record_text = FONT.render(f'Лучший рекорд: {record}', True, 'white')
         game_over = True
         while game_over:
             screen.blit(farm_background, (0, 0))
             screen.blit(dim_surface, (0, 0))
             buttons.draw(screen)
 
-            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 4))
-            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 3))
+            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 5))
+            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 4))
+            screen.blit(record_text, (WIDTH // 2 - font_scale * 4 - record_text.get_width() // 10, HEIGHT // 3.3))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        game_over = False
                 buttons.update(event)
 
             clock.tick(FPS)
