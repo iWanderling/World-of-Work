@@ -1,8 +1,9 @@
 from copy import deepcopy
 from random import choice
-from data import Images
-import pygame
 from button import Button
+from data import Images
+import sqlite3
+import pygame
 
 def TetrisGame(function):
     # Размеры окон
@@ -16,7 +17,7 @@ def TetrisGame(function):
 
     # Другие настройки
     FPS = 240  # количество кадров
-    SCORE = ROWS = 0  # очки, собранные ряды
+    score = ROWS = 0  # очки, собранные ряды
     PAUSED = False  # поставлена ли игра на паузу
 
     # координаты падающей фигуры, скорость падения
@@ -61,17 +62,23 @@ def TetrisGame(function):
             return False
         return True
 
-    """ ИНИЦИАЛИЗАЦИЯ И ОСНОВНОЙ КОД """
+    # инициализация игры
     pygame.init()
     pygame.mixer.stop()
-    pygame.display.set_caption('Тетрис - Юный Строитель')
+    pygame.display.set_caption('Строительный Тетрис')
     screen = pygame.display.set_mode(WINDOW_SIZE)  # окно
+
+    # подключение к БД
+    connect = sqlite3.connect('../settings/records.sqlite')
+    cursor = connect.cursor()
+    data = cursor.execute('SELECT * from data WHERE game="builder"').fetchone()
+    record = data[2]
 
     # фон всего игрового окна
     game_window_background = pygame.transform.scale(Images.tetris_background, GAME_WINDOW_SIZE)
     window_background = pygame.transform.scale(Images.tetris_fullsize_background, WINDOW_SIZE)
 
-    font_scale = 35
+    font_scale = 32
     FONT = pygame.font.Font(f'..\data\{"fonts"}\{"sunday.ttf"}', font_scale)
 
     brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))  # создание кирпичика
@@ -177,7 +184,7 @@ def TetrisGame(function):
                 is_row_collected = True
                 sound.play()
                 ROWS += 1
-                SCORE = ROWS * 100
+                score = ROWS * 100
 
         if not is_row_collected and is_fall:
             fall_sound.play()
@@ -189,7 +196,7 @@ def TetrisGame(function):
                     figure_rect.x, figure_rect.y = x * TILE + step_x, y * TILE + step_y
                     screen.blit(col, figure_rect)
 
-        SCORE_FONT = FONT.render(f'Текущий счёт: {SCORE}', True, pygame.Color('aqua'))
+        SCORE_FONT = FONT.render(f'Текущий счёт: {score}', True, pygame.Color('aqua'))
         w1, h1 = SCORE_FONT.get_size()  # размеры шрифта SCORE_FONT
 
         NEXT_FIGURE_FONT = FONT.render(f'Следующая фигура', True, pygame.Color('aqua'))
@@ -229,15 +236,26 @@ def TetrisGame(function):
         Button(buttons, func=TetrisGame, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
         Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
         game_over = True
+
+        # создание шрифтов
+        game_over_text = FONT.render(f'Конец игры!', True, 'aqua')
+        score_text = FONT.render(f'Набрано очков: {score}', True, 'aqua')
+        if score > record:
+            cursor.execute(f'UPDATE data SET record={score} WHERE game="builder"')
+            connect.commit()
+            record_text = FONT.render(f'Новый рекорд: {score}!', True, 'aqua')
+        else:
+            record_text = FONT.render(f'Лучший рекорд: {record}', True, 'aqua')
+
         while game_over:
             screen.blit(window_background, (0, 0))
             screen.blit(dim_surface, (0, 0))
             buttons.draw(screen)
 
-            game_over_text = FONT.render(f'Конец игры!', True, 'aqua')
-            score_text = FONT.render(f'Набрано очков: {SCORE}', True, 'aqua')
-            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 5))
-            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 4 + 25))
+            # отображение шрифтов
+            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 3, HEIGHT // 5))
+            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2.1, HEIGHT // 3.9))
+            screen.blit(record_text, (WIDTH // 2 - font_scale * 4 - record_text.get_width() // 10, HEIGHT // 3.2))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

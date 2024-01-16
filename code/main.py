@@ -1,12 +1,27 @@
-from os import environ
 from button import *
 from tetris import *
 from plane import *
 from farm import *
+import sqlite3
+import os
 
-environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
+
+os.environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
 play = True
 
+
+# создание базы данных с хранением рекордов в каждой игре
+def create_database():
+    if not os.access('../settings/records.sqlite', os.F_OK):
+        connect = sqlite3.connect('../settings/records.sqlite')
+        cursor = connect.cursor()
+
+        cursor.execute("CREATE TABLE data(id INTEGER PRIMARY KEY AUTOINCREMENT, game TEXT, record INT, played INT)")
+
+        for game in ('farmer', 'builder', 'engineer'):
+            cursor.execute(f"""INSERT INTO data(game, record, played)
+                              VALUES("{game}", 0, 0)""")
+            connect.commit()
 
 # Окно ввода имени (самое первое окно, которое появляется при запуске игры)
 def setPlayerName():
@@ -27,7 +42,7 @@ def setPlayerName():
     while active:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
+                exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     active = False
@@ -70,7 +85,7 @@ def mainMenu():
     menu_group = pygame.sprite.Group()
     Button(menu_group, func=gameLobby, y=HEIGHT // 4, text='Играть')  # играть
     Button(menu_group, func=settingsMenu, y=HEIGHT // 2.5, text='Настройки')  # настройки
-    Button(menu_group, func=pygame.quit, y=HEIGHT // 1.8, text='Выход')  # выход
+    Button(menu_group, func=exit, y=HEIGHT // 1.8, text='Выход')  # выход
 
     # воспроизводим музыку главного меню
     if play:
@@ -95,7 +110,7 @@ def mainMenu():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
+                exit()
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if player_name_rect.collidepoint(event.pos):
@@ -107,6 +122,7 @@ def mainMenu():
 
 # Окно с игровыми настройками
 def settingsMenu():
+    pygame.display.set_caption('Мир Труда')
     settings_group = pygame.sprite.Group()
     Button(settings_group, func=setPlayerName, y=325, text='Изменить имя')
     Button(settings_group, func=mainMenu, y=435, text='Назад')
@@ -118,7 +134,7 @@ def settingsMenu():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
+                exit()
 
             settings_group.update(event)
         pygame.display.flip()
@@ -153,12 +169,14 @@ def gameLobby(soundplay=False):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
+                exit()
             lobby_group.update(event)
         pygame.display.flip()
 
 
 if __name__ == '__main__':
+    create_database()
+
     pygame.init()
     pygame.display.set_caption('Мир Труда')  # заголовок
     screen = pygame.display.set_mode()  # создание окна
