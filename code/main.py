@@ -4,8 +4,6 @@ from tetris import *
 from plane import *
 from farm import *
 
-import sqlite3
-
 environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
 play = True
 
@@ -63,7 +61,6 @@ def setPlayerName():
     screen.blit(welcome_text, welcome_rect)
     pygame.display.flip()
     pygame.time.delay(1000)
-
     mainMenu()
 
 
@@ -79,11 +76,9 @@ def mainMenu():
         sound.play()
         play = False
 
-    # Load player name
     with open('../settings/username.txt') as username_file:
         player_name = username_file.read()
 
-    # Display player name in the bottom corner
     font_player_name = pygame.font.Font(None, 24)
     player_name_text = font_player_name.render(f"Игрок: {player_name}", True, (255, 255, 255))
     player_name_rect = player_name_text.get_rect(bottomleft=(10, HEIGHT - 10))
@@ -99,6 +94,10 @@ def mainMenu():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
+
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if player_name_rect.collidepoint(event.pos):
+                    setPlayerName()
 
             menu_group.update(event)
         pygame.display.flip()
