@@ -4,9 +4,8 @@ from data import Images
 from random import shuffle
 from button import Button
 
-FPS = 180
-score = 0
 
+FPS = 180
 WIDTH, HEIGHT = pygame.display.set_mode().get_size()
 
 
@@ -140,21 +139,28 @@ class Plane(pygame.sprite.Sprite):
 
 
 def YoungAvia(function):
-    global stand, order
+    global stand, order, score
     pygame.init()
     screen = pygame.display.set_mode()
     WIDTH, HEIGHT = screen.get_size()
+    score = 0
 
     # Шрифт
     font_scale = 32  # размер шрифта
     FONT = pygame.font.Font(f'..\data\{"fonts"}\{"appetite.ttf"}', font_scale)  # шрифт
     score_text = FONT.render(f'Построено cамолётов: {score}', True, 'white')  # шрифт для отображения счёта
 
+    # работа со звуком
+    pygame.mixer.stop()  # останавливаем музыку
+    sound = pygame.mixer.Sound('../data/sounds/plane_music.mp3')
+    sound.play()
+
     # фон игры
     back = pygame.transform.scale(Images.engineer_background, (WIDTH, HEIGHT))
 
     # детали самолёта
     details_group = generate_details()
+    order = [0]
 
     # стенд
     stand_group = pygame.sprite.Group()
@@ -164,16 +170,20 @@ def YoungAvia(function):
     plane_group = pygame.sprite.Group()
     plane = Plane(plane_group)
 
-    order = [0]
-
+    # работа с временем
     time_ = time()
+    timer_index = 30
     clock = pygame.time.Clock()
+
     running = True
     while running:
         screen.blit(back, (0, 0))  # отрисовка фона
         stand_group.draw(screen)  # отрисовка стенда
         details_group.draw(screen)  # отрисовка деталей
         plane_group.draw(screen)  # отрисовка самолёта
+
+        # таймер (оставшееся время до конца игры)
+        timer = timer_index - int(time() - time_)
 
         # длина порядка деталей (нужна для сравнения и изменения изображения самолёта)
         order_len = len(order)
@@ -191,6 +201,7 @@ def YoungAvia(function):
             plane.update(order[-1])
 
         if not len(plane.groups()):
+            timer_index += 5  # бонусное время
             # детали самолёта
             details_group = generate_details()
 
@@ -203,8 +214,6 @@ def YoungAvia(function):
             plane = Plane(plane_group)
 
             order = [0]
-
-        timer = 10 - int(time() - time_)
 
         timer_text = FONT.render(f'Осталось секунд: {timer}', True, 'white')
         score_text = FONT.render(f'Построено cамолётов: {score}', True, 'white')
@@ -227,10 +236,11 @@ def YoungAvia(function):
         dim_surface = pygame.Surface((WIDTH, HEIGHT))
         dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
+        sound.stop()
         buttons = pygame.sprite.Group()
         img = Images.plane_over_buttons
         Button(buttons, func=YoungAvia, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
-        Button(buttons, func=function, images=img, y=HEIGHT // 2 + 50, text='Меню')
+        Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
         game_over = True
         while game_over:
             screen.blit(back, (0, 0))

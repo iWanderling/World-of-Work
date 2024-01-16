@@ -20,7 +20,7 @@ def TetrisGame(function):
     PAUSED = False  # поставлена ли игра на паузу
 
     # координаты падающей фигуры, скорость падения
-    FALL_CURRENT_POSITION, FALL_SPEED = 0, 500
+    FALL_CURRENT_POSITION, FALL_SPEED = 0, 300
 
     # Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
     dim_surface = pygame.Surface(WINDOW_SIZE)
@@ -227,7 +227,7 @@ def TetrisGame(function):
         buttons = pygame.sprite.Group()
         img = Images.builder_over_buttons
         Button(buttons, func=TetrisGame, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
-        Button(buttons, func=function, images=img, y=HEIGHT // 2 + 50, text='Меню')
+        Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
         game_over = True
         while game_over:
             screen.blit(window_background, (0, 0))
