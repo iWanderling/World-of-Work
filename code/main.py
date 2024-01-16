@@ -66,14 +66,16 @@ def setPlayerName():
 
 # Окно главного меню игры
 def mainMenu():
-    global play
+    global play, menu_sound
     menu_group = pygame.sprite.Group()
     Button(menu_group, func=gameLobby, y=HEIGHT // 4, text='Играть')  # играть
     Button(menu_group, func=settingsMenu, y=HEIGHT // 2.5, text='Настройки')  # настройки
     Button(menu_group, func=pygame.quit, y=HEIGHT // 1.8, text='Выход')  # выход
+
+    # воспроизводим музыку главного меню
     if play:
-        sound = pygame.mixer.Sound('../data/sounds/menu.mp3')
-        sound.play()
+        menu_sound = pygame.mixer.Sound('../data/sounds/menu.mp3')
+        menu_sound.play()
         play = False
 
     with open('../settings/username.txt') as username_file:
@@ -106,8 +108,8 @@ def mainMenu():
 # Окно с игровыми настройками
 def settingsMenu():
     settings_group = pygame.sprite.Group()
-    Button(settings_group, func=setPlayerName, y=225, text='Изменить имя')
-    Button(settings_group, func=mainMenu, y=325, text='Назад')
+    Button(settings_group, func=setPlayerName, y=325, text='Изменить имя')
+    Button(settings_group, func=mainMenu, y=435, text='Назад')
 
     running = True
     while running:
@@ -123,7 +125,12 @@ def settingsMenu():
 
 
 # Игровое окно
-def gameLobby():
+def gameLobby(soundplay=False):
+
+    # прогрываем музыку главного меню, если игрок вышел из любой игры-локации:
+    if soundplay:
+        menu_sound.play()
+
     # задний фон игровой карты (лобби)
     lobby_background = pygame.transform.scale(Images.lobby_background, (WIDTH, HEIGHT))
 

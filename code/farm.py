@@ -3,6 +3,7 @@ from os import path
 from data import Images, sized
 from button import Button
 from random import random, choice, randint
+import sqlite3
 
 
 # пауза
@@ -83,14 +84,28 @@ class Farmer(pygame.sprite.Sprite):
         self.rect.x = WIDTH // 2
         self.rect.y = HEIGHT - 350
 
+        self.sound = pygame.mixer.Sound('../data/sounds/going.mp3')
+        self.sound_playing = True
+
     def update(self, stay=False):
+        collide_border = self.collide_window_border()
+
+        if self.sound_playing and not collide_border and not stay:
+            self.sound_playing = False
+            self.sound.play()
+
         self.choose_sprite()
 
         # если персонаж не столкнулся с границей окна - анимируем его
-        if self.collide_window_border() and not stay:
+        if not collide_border and not stay:
             self.anim += 0.1
             if self.anim > 2:
                 self.anim = 0
+
+        # если персонаж остановился - приглушаем звук ходьбы
+        if stay or collide_border:
+            self.sound.stop()
+            self.sound_playing = True
 
         # обновление персонажа, если он идёт вправо
         if self.direction == 1:
@@ -100,14 +115,10 @@ class Farmer(pygame.sprite.Sprite):
         elif self.direction == -1:
             self.image = self.left_sprites[int(self.anim)]
 
-        # обновление персонажа, если он стоит
-        elif stay:
-            self.image = self.left_sprites[int(self.anim)] if self.direction < 0 else self.right_sprites[int(self.anim)]
-
         # обновление маски изображения
         self.mask = pygame.mask.from_surface(self.image)
 
-        if self.collide_window_border() and not stay:
+        if not collide_border and not stay:
             self.rect = self.rect.move(player_speed * self.direction, 0)
 
     def choose_sprite(self):
@@ -122,32 +133,34 @@ class Farmer(pygame.sprite.Sprite):
 
     # проверка столкновения персонажа с границами окна игры
     def collide_window_border(self):
-        return -19 <= self.rect.x + player_speed * self.direction <= WIDTH - 335
+        return not (-19 <= self.rect.x + player_speed * self.direction <= WIDTH - 335)
+
 
 # Игра: Весёлый фермер
 def HappyFarmer(function):
-    global score, lives, farmer
+    global score, lives, farmer, FONT
     pygame.init()
-    pygame.mixer.stop()
-    font_scale = 36
-    FONT = pygame.font.Font('../data/fonts/appetite.ttf', font_scale)  # шрифт счётчика
-    farm_sound = pygame.mixer.Sound('../data/sounds/farm_sound.mp3')
-    farm_sound.set_volume(0.5)
-    farm_sound.play()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+    # звук игры
+    pygame.mixer.stop()  # приглушаем все звуки
+    farm_sound = pygame.mixer.Sound('../data/sounds/farm_sound.mp3')
+    farm_sound.set_volume(0.5)  # громкость - 50%
+    farm_sound.play()
+
+    font_scale = 36  # размер игрового шрифта
+    FONT = pygame.font.Font('../data/fonts/appetite.ttf', font_scale)  # шрифт
+
+    # игровые изображения (трава, сердца)
     grass = pygame.transform.scale(Images.grass, (WIDTH, 100))
     heart_img = Images.heart  # сердца
     heart_width = heart_img.get_width()
 
     score = 0  # счёт
-    lives = 5  # прав на ошибку
+    lives = 5  # прав на ошибку (жизней)
 
     # фон игры
     farm_background = pygame.transform.scale(Images.farm_background, (WIDTH, HEIGHT))
-
-    # Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
-    dim_surface = pygame.Surface((WIDTH, HEIGHT))
-    dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
     paused = False  # поставлена ли игра на паузу
     all_items = pygame.sprite.Group()  # все падающие предметы
@@ -157,10 +170,8 @@ def HappyFarmer(function):
 
     # Главный цикл игры
     clock = pygame.time.Clock()
-    anim = 0
     running = True
     while running:
-        anim += 1
         # отрисовка всех изображений на экране
         screen.blit(farm_background, (0, 0))  # отрисовка фона
         screen.blit(grass, (0, HEIGHT - 100))  # отрисовка травы (это не то, о чём вы подумали)
@@ -173,9 +184,10 @@ def HappyFarmer(function):
 
         # Проверка: поставлена ли игра на паузу
         if paused:
+            farmer.sound.stop()
             pause(screen)
         else:
-            all_items.update()
+            all_items.update()  # обновляем падающие предметы, если игра не поставлена на паузу
 
         # отображение счета в углу
         screen.blit(FONT.render(f"Счёт: {score}", True, (0, 0, 0)), (WIDTH - 150, 10))
@@ -209,30 +221,31 @@ def HappyFarmer(function):
 
             # если количество жизней кончилось - завершаем игру
             if not lives:
-                running = False
                 break
 
         clock.tick(FPS)
         pygame.display.flip()
 
+    # Функция для окончания игры
     def game_over():
-        pygame.mixer.stop()
-        # Создаем отдельный поверхностный объект для затемнения экрана
-        dim_surface = pygame.Surface((WIDTH, HEIGHT))
-        dim_surface.set_alpha(150)  # Устанавливаем прозрачность
+        pygame.mixer.stop()  # останавливем все звуки
 
-        buttons = pygame.sprite.Group()
+        # создаём кнопки
         img = Images.farm_over_buttons
+        buttons = pygame.sprite.Group()
         Button(buttons, func=HappyFarmer, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
-        Button(buttons, func=function, images=img, y=HEIGHT // 2 + 50, text='Меню')
+        Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
+
+        # создаём шрифты
+        game_over_text = FONT.render(f'Время вышло!', True, 'white')
+        score_text = FONT.render(f'Словлено продуктов: {score}', True, 'white')
+
         game_over = True
         while game_over:
             screen.blit(farm_background, (0, 0))
             screen.blit(dim_surface, (0, 0))
             buttons.draw(screen)
 
-            game_over_text = FONT.render(f'Время вышло!', True, 'white')
-            score_text = FONT.render(f'Словлено продуктов: {score}', True, 'white')
             screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 4))
             screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 3))
 
