@@ -5,29 +5,46 @@ from data import Images
 import sqlite3
 import pygame
 
+
+# Игровая пауза
+def pause():
+    screen.blit(dim_surface, (0, 0))  # Затемнение экрана
+    pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, 'white')
+    screen.blit(pause_text, (TILE_WIDTH + 70, TILE_HEIGHT + 50))  # отображение текста
+
+
+# Размеры монитора игрока
+WINDOW_SIZE = pygame.display.set_mode().get_size()
+
+
+# Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
+dim_surface = pygame.Surface(WINDOW_SIZE)
+dim_surface.set_alpha(150)  # Устанавливаем прозрачность
+
+
+# Размеры окон
+WIDTH, HEIGHT = WINDOW_SIZE  # ширина и высота игрового окна
+TILE_WIDTH, TILE_HEIGHT = 10, 20  # ширина и высота одной плитки
+TILE = 35  # размер плитки
+GAME_WINDOW_SIZE = TILE_WIDTH * TILE, TILE_HEIGHT * TILE  # игровое окно
+step_x = WIDTH // 2 - GAME_WINDOW_SIZE[0] // 2  # сдвиг игрового поля вправо
+step_y = 75  # сдвиг игрового поля вниз
+
+
 def TetrisGame(function):
-    # Размеры окон
-    WINDOW_SIZE = pygame.display.set_mode().get_size()
-    WIDTH, HEIGHT = WINDOW_SIZE
-    TILE_WIDTH, TILE_HEIGHT = 10, 20  # ширина и высота одной плитки
-    TILE = 35  # размер плитки
-    GAME_WINDOW_SIZE = TILE_WIDTH * TILE, TILE_HEIGHT * TILE  # игровое окно
-    step_x = WIDTH // 2 - GAME_WINDOW_SIZE[0] // 2  # сдвиг игрового поля вправо
-    step_y = 75  # сдвиг игрового поля вниз
+    global current_figure, next_figure
 
-    # Другие настройки
-    FPS = 240  # количество кадров
-    score = ROWS = 0  # очки, собранные ряды
-    PAUSED = False  # поставлена ли игра на паузу
+    # Проверка на выход фигуры за границы (левой, правой, а также столкновения с полом)
+    def check_borders(index) -> bool:
+        if current_figure[index].x < 0 or current_figure[i].x > TILE_WIDTH - 1:
+            return False
+        elif current_figure[index].y > TILE_HEIGHT - 1 or GAME_FIELD[current_figure[i].y][current_figure[i].x]:
+            return False
+        return True
 
-    # координаты падающей фигуры, скорость падения
-    FALL_CURRENT_POSITION, FALL_SPEED = 0, 300
+    """ Работа с переменными (Падающие блоки, игровое поле) """
 
-    # Создаем отдельный поверхностный объект для затемнения экрана (для паузы)
-    dim_surface = pygame.Surface(WINDOW_SIZE)
-    dim_surface.set_alpha(150)  # Устанавливаем прозрачность
-
-    # игровое поле (нужно для отрисовки игрового процесса)
+    # Игровое поле (нужно для отрисовки игрового процесса)
     GAME_FIELD = [[0 for x in range(TILE_WIDTH)] for y in range(TILE_HEIGHT)]
 
     # Координаты фигур (для отрисовки)
@@ -39,58 +56,63 @@ def TetrisGame(function):
                         [(0, 0), (0, -1), (0, 1), (1, -1)],  # L
                         [(0, 0), (-1, 0), (0, 1), (-1, -1)]]  # .-
 
-    def pause():
-        screen.blit(dim_surface, (0, 0))  # Затемнение экрана
-        pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, 'white')
-        screen.blit(pause_text, (TILE_WIDTH + 70, TILE_HEIGHT + 50))  # отображение текста
-
     # начальное расположение новой фигуры
     figures = [[pygame.Rect(x + TILE_WIDTH // 2, y + 1, 1, 1) for x, y in fig_pos] for fig_pos in FIGURES_POSITION]
 
     # квадратик (1/4 часть) одной фигуры
     figure_rect = pygame.Rect(0, 0, TILE - 2, TILE - 2)
 
-    # текущая фигура
+    # Текущая и следующая фигура
     current_figure = deepcopy(choice(figures))
     next_figure = deepcopy(choice(figures))
 
-    # проверка на выход фигуры за границы (левой, правой, а также столкновения с полом)
-    def check_borders(index) -> bool:
-        if current_figure[index].x < 0 or current_figure[i].x > TILE_WIDTH - 1:
-            return False
-        elif current_figure[index].y > TILE_HEIGHT - 1 or GAME_FIELD[current_figure[i].y][current_figure[i].x]:
-            return False
-        return True
-
-    # инициализация игры
+    """ Инициализация игры """
     pygame.init()
     pygame.mixer.stop()
     pygame.display.set_caption('Строительный Тетрис')
     screen = pygame.display.set_mode(WINDOW_SIZE)  # окно
 
-    # подключение к БД
+    # Подключение к БД
     connect = sqlite3.connect('../settings/records.sqlite')
     cursor = connect.cursor()
     data = cursor.execute('SELECT * from data WHERE game="builder"').fetchone()
     record = data[2]
 
-    # фон всего игрового окна
+    # Фоны игровых окон
     game_window_background = pygame.transform.scale(Images.tetris_background, GAME_WINDOW_SIZE)
     window_background = pygame.transform.scale(Images.tetris_fullsize_background, WINDOW_SIZE)
 
+    # Работаем со шрифтом игры
     font_scale = 32
-    FONT = pygame.font.Font(f'..\data\{"fonts"}\{"sunday.ttf"}', font_scale)
+    FONT = pygame.font.Font(f'../data/{"fonts"}/{"sunday.ttf"}', font_scale)
 
+    # Изображения кирпичика текущей фигуры и следующей фигуры
     brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))  # создание кирпичика
     next_brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))
 
+    # Загрузка звуков для игры
     fall_sound = pygame.mixer.Sound('../data/sounds/fall.mp3')  # звук падения фигуры
     sound = pygame.mixer.Sound('../data/sounds/collect-row.mp3')  # звук, который проигрывается при создании ряда
     end_music = pygame.mixer.Sound('../data/sounds/builder_end.mp3')  # конец игры
     game_music = pygame.mixer.Sound('../data/sounds/builder_music.mp3')  # игровая музыка
-    game_music.set_volume(0.1)
-    game_music.play()
-    clock = pygame.time.Clock()  # FPS
+    game_music.set_volume(0.5)  # громкость - 50%
+    game_music.play()  # проигрываем фоновую музыку
+
+    # Отрисовка текстов, которые не меняются:
+    NEXT_FIGURE_FONT = FONT.render(f'Следующая фигура', True, pygame.Color('aqua'))  # Следующая фигура
+    w2, h2 = NEXT_FIGURE_FONT.get_size()  # размеры шрифта NEXT_FIGURE_FONT
+
+    GAME_TITLE = FONT.render('Строительный Тетрис', True, pygame.Color('aqua'))  # Название игры сверху игр. Окна
+    w3, h3 = GAME_TITLE.get_size()  # размеры
+
+    # Игровые переменные
+    score = ROWS = 0  # очки, собранные ряды
+    PAUSED = False  # поставлена ли игра на паузу
+
+    # Координаты падающей фигуры, скорость падения фигуры (пикселей/сек.)
+    FALL_CURRENT_POSITION, FALL_SPEED = 0, 300
+    FPS = 240
+    clock = pygame.time.Clock()
     running = True
     while running:
         is_row_collected = False  # собран ли ряд
@@ -155,7 +177,7 @@ def TetrisGame(function):
                 if not check_borders(i):
                     is_fall = True
                     for i in range(4):
-                        # запоминаем позицию и цвет упавшей фигуры, сохраняем её на поле
+                        # Запоминаем позицию и цвет упавшей фигуры, сохраняем её на поле
                         GAME_FIELD[old_figure[i].y][old_figure[i].x] = brick
                     # создаём новую фигуру
                     current_figure = next_figure
@@ -166,6 +188,7 @@ def TetrisGame(function):
                     next_brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))
                     break
 
+        # Если игра поставлена на паузу:
         if PAUSED:
             pause()
 
@@ -186,6 +209,7 @@ def TetrisGame(function):
                 ROWS += 1
                 score = ROWS * 100
 
+        # Если упала фигура - проигрываем звук падения
         if not is_row_collected and is_fall:
             fall_sound.play()
 
@@ -196,15 +220,11 @@ def TetrisGame(function):
                     figure_rect.x, figure_rect.y = x * TILE + step_x, y * TILE + step_y
                     screen.blit(col, figure_rect)
 
+        # Текст, отображающий текущий счёт:
         SCORE_FONT = FONT.render(f'Текущий счёт: {score}', True, pygame.Color('aqua'))
         w1, h1 = SCORE_FONT.get_size()  # размеры шрифта SCORE_FONT
 
-        NEXT_FIGURE_FONT = FONT.render(f'Следующая фигура', True, pygame.Color('aqua'))
-        w2, h2 = NEXT_FIGURE_FONT.get_size()  # размеры шрифта NEXT_FIGURE_FONT
-
-        GAME_TITLE = FONT.render('Строительный Тетрис', True, pygame.Color('aqua'))
-        w3, h3 = GAME_TITLE.get_size()
-
+        # Отрисовка шрифтов (текста)
         screen.blit(SCORE_FONT, (step_x // 2 - w1 // 2, HEIGHT // 2 - h1 // 2))
         screen.blit(NEXT_FIGURE_FONT, (WIDTH - 475, HEIGHT // 2 - h2 // 2 - 50))
         screen.blit(GAME_TITLE, (step_x - w3 // 12, 5))
@@ -224,18 +244,19 @@ def TetrisGame(function):
         pygame.display.flip()
         clock.tick(FPS)
 
+    # Функция для окончания игры
     def game_over():
-        pygame.mixer.stop()
-        end_music.play()
+        pygame.mixer.stop()  # Обрываем все звуки
+        end_music.play()  # Звук конца игры
         # Создаем отдельный поверхностный объект для затемнения экрана
         dim_surface = pygame.Surface((WIDTH, HEIGHT))
         dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
+        # Создаём кнопки
         buttons = pygame.sprite.Group()
         img = Images.builder_over_buttons
         Button(buttons, func=TetrisGame, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
         Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
-        game_over = True
 
         # создание шрифтов
         game_over_text = FONT.render(f'Конец игры!', True, 'aqua')
@@ -247,7 +268,7 @@ def TetrisGame(function):
         else:
             record_text = FONT.render(f'Лучший рекорд: {record}', True, 'aqua')
 
-        while game_over:
+        while True:
             screen.blit(window_background, (0, 0))
             screen.blit(dim_surface, (0, 0))
             buttons.draw(screen)
@@ -260,9 +281,6 @@ def TetrisGame(function):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        game_over = False
                 buttons.update(event)
 
             clock.tick(FPS)

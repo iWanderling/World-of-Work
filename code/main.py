@@ -1,23 +1,24 @@
-from button import *
-from tetris import *
-from plane import *
-from farm import *
-import sqlite3
-import os
+from button import *  # кнопки
+from tetris import *  # игра для строителя
+from plane import *  # игра для инженера
+from farm import *  # игра для фермера
+import sqlite3  # БД
+import os  # для проверки существования БД в настройках игры
 
 
-os.environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
+# Центрирование окна, создание флага для первого проигрывания музыки в главном меню
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 play = True
 
 
-# создание базы данных с хранением рекордов в каждой игре
+# Создание базы данных с хранением рекордов в каждой игре (если она существует - то не создаём)
 def create_database():
     if not os.access('../settings/records.sqlite', os.F_OK):
         connect = sqlite3.connect('../settings/records.sqlite')
         cursor = connect.cursor()
-
         cursor.execute("CREATE TABLE data(id INTEGER PRIMARY KEY AUTOINCREMENT, game TEXT, record INT, played INT)")
 
+        # Добавление данных в БД
         for game in ('farmer', 'builder', 'engineer'):
             cursor.execute(f"""INSERT INTO data(game, record, played)
                               VALUES("{game}", 0, 0)""")
@@ -25,16 +26,15 @@ def create_database():
 
 # Окно ввода имени (самое первое окно, которое появляется при запуске игры)
 def setPlayerName():
-    input_box_width = 300
-    input_box_height = 32
-    input_box = pygame.Rect((WIDTH - input_box_width) // 2, HEIGHT // 2, input_box_width, input_box_height)
+    width, height = 300, 32  # размеры окна ввода
+    input_box = pygame.Rect((WIDTH - width) // 2, HEIGHT // 2, width, height)
     color_inactive = pygame.Color('lightskyblue3')
     color = color_inactive
     active = True
     text = ''
     font_input = pygame.font.Font(None, 32)
 
-    # Инструкция
+    # Инструкция для ввода текста:
     font_instruction = pygame.font.Font(None, 24)
     instruction_text = font_instruction.render("Введи своё имя в поле ниже и нажми ENTER", True, (255, 255, 255))
     instruction_rect = instruction_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
@@ -51,21 +51,17 @@ def setPlayerName():
                     text = text[:-1]
                 else:
                     text += event.unicode
-
         screen.fill((30, 30, 30))
 
         # Отображение текста инструкции
         screen.blit(instruction_text, instruction_rect)
-
         pygame.draw.rect(screen, color, input_box, 2)
         pygame.draw.rect(screen, color, input_box)
-
         text_surface = font_input.render(text, True, (255, 255, 255))
         screen.blit(text_surface, (input_box.x + 10, input_box.y + 5))
         pygame.display.flip()
 
     text = text.capitalize()
-
     with open('../settings/username.txt', 'w') as f:
         f.write(text)
 
@@ -82,27 +78,26 @@ def setPlayerName():
 # Окно главного меню игры
 def mainMenu():
     global play, menu_sound
-    menu_group = pygame.sprite.Group()
-    Button(menu_group, func=gameLobby, y=HEIGHT // 4, text='Играть')  # играть
-    Button(menu_group, func=settingsMenu, y=HEIGHT // 2.5, text='Настройки')  # настройки
-    Button(menu_group, func=exit, y=HEIGHT // 1.8, text='Выход')  # выход
+    menu_group = pygame.sprite.Group()  # создаём кнопки, привязываем их к группе
+    Button(menu_group, func=gameLobby, y=HEIGHT // 4, text='Играть')  # Играть
+    Button(menu_group, func=settingsMenu, y=HEIGHT // 2.5, text='Настройки')  # Настройки
+    Button(menu_group, func=exit, y=HEIGHT // 1.8, text='Выход')  # Выйти из игры
 
-    # воспроизводим музыку главного меню
+    # Воспроизводим музыку главного меню (за это отвечает флаг play)
     if play:
         menu_sound = pygame.mixer.Sound('../data/sounds/menu.mp3')
         menu_sound.play()
         play = False
 
+    # Считываем имя пользователя, отображаем имя в главном меню
     with open('../settings/username.txt') as username_file:
         player_name = username_file.read()
-
     font_player_name = pygame.font.Font(None, 24)
     player_name_text = font_player_name.render(f"Игрок: {player_name}", True, (255, 255, 255))
     player_name_rect = player_name_text.get_rect(bottomleft=(10, HEIGHT - 10))
     screen.blit(player_name_text, player_name_rect)
 
-    running = True
-    while running:
+    while True:
         screen.blit(menu_background, (0, 0))
         menu_group.draw(screen)
 
@@ -127,8 +122,7 @@ def settingsMenu():
     Button(settings_group, func=setPlayerName, y=325, text='Изменить имя')
     Button(settings_group, func=mainMenu, y=435, text='Назад')
 
-    running = True
-    while running:
+    while True:
         screen.blit(menu_background, (0, 0))
         settings_group.draw(screen)
 
@@ -143,7 +137,7 @@ def settingsMenu():
 # Игровое окно
 def gameLobby(soundplay=False):
 
-    # прогрываем музыку главного меню, если игрок вышел из любой игры-локации:
+    # Проигрываем музыку главного меню, если игрок вышел из любой игры-локации:
     if soundplay:
         menu_sound.play()
 
@@ -162,8 +156,7 @@ def gameLobby(soundplay=False):
     # кнопка "назад"
     Button(lobby_group, func=mainMenu, images=Images.arrow_left, x=0, y=0, size=(50, 50))
 
-    running = True
-    while running:
+    while True:
         screen.blit(lobby_background, (0, 0))
         lobby_group.draw(screen)
 
@@ -175,12 +168,12 @@ def gameLobby(soundplay=False):
 
 
 if __name__ == '__main__':
-    create_database()
+    create_database()  # создаём базу данных
 
-    pygame.init()
+    pygame.init()  # инициализация игры
     pygame.display.set_caption('Мир Труда')  # заголовок
     screen = pygame.display.set_mode()  # создание окна
-    WIDTH, HEIGHT = screen.get_size()
+    WIDTH, HEIGHT = screen.get_size()  # размеры монитора пользователя
 
     # задний фон главного меню
     menu_background = Images.menu_background
