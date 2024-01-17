@@ -1,19 +1,81 @@
-from os import path
-from pygame import image, transform
+"""
+      Данный файл содержит в себе функции, которые используются во всех играх, а также класс со всеми изображениями для
+    удобной работы с ними. Помимо этого, этот файл импортирует библиотеки pygame и sqlite, так что импортировать их
+    в других файлах не придётся. Проще говоря, этот файл значительно уменьшает количество строк кода, что может быть
+    полезно для людей, которые только знакомятся с нашим кодом. Да и, на самом деле, такой подход более рационален)
+"""
 
 
-# Функция для загрузки изображений и их преобразований в pygame-объект изображений
-def sized(image, size):
-    return transform.scale(image, size)
+# Импорт библиотек
+from os import path  # для загрузки файлов
+import sqlite3  # БД
+import pygame  # <- из-за этого красавца мы все здесь сегодня собрались (o_o)
 
 
-# Функция для конвентирования изображения в pygame-формат
+# Размеры монитора игрока (ширина и высота)
+WIDTH, HEIGHT = pygame.display.set_mode().get_size()
+
+
+# Создаем отдельный поверхностный объект для затемнения экрана
+dim_surface = pygame.Surface((WIDTH, HEIGHT))
+dim_surface.set_alpha(150)  # Устанавливаем прозрачность
+
+
+# Отображение инструкции в каждой игре (запрос: экран, фон игры, шрифт игры, путь к инструкции, название игры):
+def get_instruction(screen, background, font, i_path, game_title):
+    # Открываем БД и текстом инструкции:
+    connect = sqlite3.connect('../settings/records.sqlite')
+    cursor = connect.cursor()
+    with open(i_path, encoding='utf-8') as f:
+        instruction = [s.strip() for s in f.readlines()]  # чтение инструкции
+
+    # Цикл для отображения инструкции:
+    irun = True
+    while irun:
+        font_y = 100  # поскольку в pygame текст нельзя переносить, будем построчно отображать текст на экране
+        screen.blit(background, (0, 0))  # рисуем фон
+        screen.blit(dim_surface, (0, 0))  # затемняем экран
+
+        # Отрисовка инструкции (построчно):
+        for i in range(len(instruction)):
+            instruction_string = font.render(instruction[i], True, 'white')
+            w_i, h_i = instruction_string.get_size()
+            screen.blit(instruction_string, (WIDTH // 2 - w_i // 2, font_y))
+            font_y += 50
+
+        # Обрабатываем нажатие на любую кнопку, чтобы начать игру
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_s:
+                    irun = False
+                    break
+            elif event.type == pygame.QUIT:
+                exit()
+        pygame.display.flip()
+
+    # Обновляем БД: инструкция больше не покажется:
+    cursor.execute(f'UPDATE data SET played=1 WHERE game="{game_title}"')
+    connect.commit()
+
+# Функция для изменения размеров pygame-изображения:
+def change_size(image, size):
+    return pygame.transform.scale(image, size)
+
+
+# Функция для загрузки и конвентирования изображения в pygame-формат:
 def loader(folder, name):
     address = path.join(f'..\data\images\{folder}', name)
-    return image.load(address)
+    return pygame.image.load(address)
 
 
-# Класс для хранения всех изображений, задействованных в игре
+# Игровая пауза:
+def pause(screen, game_font):
+    screen.blit(dim_surface, (0, 0))  # Затемнение экрана
+    pause_text = game_font.render("Пауза. Нажмите P, чтобы продолжить", True, 'white')
+    screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 20))  # отображение текста
+
+
+# Класс для хранения всех изображений, задействованных в игре:
 class Images:
     # Изображения интерфейса
     arrow_left = [loader('interface', 'arrow_left.png'), loader('interface', 'arrow_left_hover.png')]  # кнопка "назад"

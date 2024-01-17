@@ -1,16 +1,9 @@
 from copy import deepcopy
 from random import choice
 from button import Button
-from data import Images
+from data import *
 import sqlite3
 import pygame
-
-
-# Игровая пауза
-def pause():
-    screen.blit(dim_surface, (0, 0))  # Затемнение экрана
-    pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, 'white')
-    screen.blit(pause_text, (TILE_WIDTH + 70, TILE_HEIGHT + 50))  # отображение текста
 
 
 # Размеры монитора игрока
@@ -76,16 +69,18 @@ def TetrisGame(function):
     connect = sqlite3.connect('../settings/records.sqlite')
     cursor = connect.cursor()
     data = cursor.execute('SELECT * from data WHERE game="builder"').fetchone()
-    record = data[2]
+    record, is_played = data[2], data[3]
 
     # Фоны игровых окон
     game_window_background = pygame.transform.scale(Images.tetris_background, GAME_WINDOW_SIZE)
     window_background = pygame.transform.scale(Images.tetris_fullsize_background, WINDOW_SIZE)
 
     # Работаем со шрифтом игры
-    font_scale = 32
-    FONT = pygame.font.Font(f'../data/{"fonts"}/{"sunday.ttf"}', font_scale)
+    font_scale = 22
+    game_font = pygame.font.Font(f'../data/{"fonts"}/{"sunday.ttf"}', font_scale)
 
+    if not is_played:
+        get_instruction(screen, window_background, game_font, '../settings/tetris_i.txt', 'builder')
     # Изображения кирпичика текущей фигуры и следующей фигуры
     brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))  # создание кирпичика
     next_brick = pygame.transform.scale(choice(Images.bricks), (TILE, TILE))
@@ -99,10 +94,10 @@ def TetrisGame(function):
     game_music.play()  # проигрываем фоновую музыку
 
     # Отрисовка текстов, которые не меняются:
-    NEXT_FIGURE_FONT = FONT.render(f'Следующая фигура', True, pygame.Color('aqua'))  # Следующая фигура
+    NEXT_FIGURE_FONT = game_font.render(f'Следующая фигура', True, pygame.Color('aqua'))  # Следующая фигура
     w2, h2 = NEXT_FIGURE_FONT.get_size()  # размеры шрифта NEXT_FIGURE_FONT
 
-    GAME_TITLE = FONT.render('Строительный Тетрис', True, pygame.Color('aqua'))  # Название игры сверху игр. Окна
+    GAME_TITLE = game_font.render('Строительный Тетрис', True, pygame.Color('aqua'))  # Название игры сверху игр. Окна
     w3, h3 = GAME_TITLE.get_size()  # размеры
 
     # Игровые переменные
@@ -118,8 +113,24 @@ def TetrisGame(function):
         is_row_collected = False  # собран ли ряд
         is_fall = False  # упала ли фигура
 
+        # Загрузка фонов игры:
         screen.blit(window_background, (0, 0))
         screen.blit(game_window_background, (step_x, step_y))
+
+        # Текст, отображающий текущий счёт:
+        SCORE_FONT = game_font.render(f'Текущий счёт: {score}', True, pygame.Color('aqua'))
+        w1, h1 = SCORE_FONT.get_size()  # размеры шрифта SCORE_FONT
+
+        # Отрисовка шрифтов (текста)
+        screen.blit(SCORE_FONT, (step_x // 2 - w1 // 2, HEIGHT // 2 - h1 // 2))
+        screen.blit(NEXT_FIGURE_FONT, (WIDTH - 475, HEIGHT // 2 - h2 // 2 - 50))
+        screen.blit(GAME_TITLE, (WIDTH // 2 - w3 // 2, 5))
+
+        # отрисовка следующей фигуры
+        for i in range(4):
+            figure_rect.x = next_figure[i].x * TILE + WIDTH - w2 * 1.36
+            figure_rect.y = next_figure[i].y * TILE + HEIGHT // 2 + TILE * 2
+            screen.blit(next_brick, figure_rect)
 
         X_DIRECTION = 0  # перемещение по оси X
         ROTATION = False  # переменная для переворачивания фигуры
@@ -190,7 +201,7 @@ def TetrisGame(function):
 
         # Если игра поставлена на паузу:
         if PAUSED:
-            pause()
+            pause(screen, game_font)
 
         # поиск заполненных рядов в игровом поле
         row = TILE_HEIGHT - 1
@@ -220,21 +231,6 @@ def TetrisGame(function):
                     figure_rect.x, figure_rect.y = x * TILE + step_x, y * TILE + step_y
                     screen.blit(col, figure_rect)
 
-        # Текст, отображающий текущий счёт:
-        SCORE_FONT = FONT.render(f'Текущий счёт: {score}', True, pygame.Color('aqua'))
-        w1, h1 = SCORE_FONT.get_size()  # размеры шрифта SCORE_FONT
-
-        # Отрисовка шрифтов (текста)
-        screen.blit(SCORE_FONT, (step_x // 2 - w1 // 2, HEIGHT // 2 - h1 // 2))
-        screen.blit(NEXT_FIGURE_FONT, (WIDTH - 475, HEIGHT // 2 - h2 // 2 - 50))
-        screen.blit(GAME_TITLE, (step_x - w3 // 12, 5))
-
-        # отрисовка следующей фигуры
-        for i in range(4):
-            figure_rect.x = next_figure[i].x * TILE + WIDTH - w2 * 1.36
-            figure_rect.y = next_figure[i].y * TILE + HEIGHT // 2 + TILE * 2
-            screen.blit(next_brick, figure_rect)
-
         # проверка окончания игры
         for i in range(TILE_WIDTH):
             if GAME_FIELD[0][i]:
@@ -259,14 +255,14 @@ def TetrisGame(function):
         Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
 
         # создание шрифтов
-        game_over_text = FONT.render(f'Конец игры!', True, 'aqua')
-        score_text = FONT.render(f'Набрано очков: {score}', True, 'aqua')
+        game_over_text = game_font.render(f'Конец игры!', True, 'aqua')
+        score_text = game_font.render(f'Набрано очков: {score}', True, 'aqua')
         if score > record:
             cursor.execute(f'UPDATE data SET record={score} WHERE game="builder"')
             connect.commit()
-            record_text = FONT.render(f'Новый рекорд: {score}!', True, 'aqua')
+            record_text = game_font.render(f'Новый рекорд: {score}!', True, 'aqua')
         else:
-            record_text = FONT.render(f'Лучший рекорд: {record}', True, 'aqua')
+            record_text = game_font.render(f'Лучший рекорд: {record}', True, 'aqua')
 
         while True:
             screen.blit(window_background, (0, 0))
@@ -274,9 +270,9 @@ def TetrisGame(function):
             buttons.draw(screen)
 
             # отображение шрифтов
-            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 3, HEIGHT // 5))
-            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2.1, HEIGHT // 3.9))
-            screen.blit(record_text, (WIDTH // 2 - font_scale * 4 - record_text.get_width() // 10, HEIGHT // 3.2))
+            screen.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2, HEIGHT // 5))
+            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, HEIGHT // 3.9))
+            screen.blit(record_text, (WIDTH // 2 - record_text.get_width() // 2, HEIGHT // 3.2))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

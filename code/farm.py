@@ -1,15 +1,7 @@
-import pygame
 import sqlite3  # БД
 from button import Button  # Кнопки
-from data import Images, sized  # изображения
+from data import *  # изображения
 from random import random, choice, randint
-
-
-# Игровая пауза
-def pause(screen):
-    screen.blit(dim_surface, (0, 0))  # Затемнение экрана
-    pause_text = FONT.render("Пауза. Нажмите P, чтобы продолжить", True, 'white')
-    screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 20))  # отображение текста
 
 
 WIDTH, HEIGHT = pygame.display.set_mode().get_size()  # размеры окна
@@ -18,14 +10,11 @@ player_speed = 8  # скорость игрока
 FPS = 60  # количество кадров в секунду
 size = (350, 350)  # размеры персонажа (фермера)
 
-# Создаем отдельный поверхностный объект для затемнения экрана
-dim_surface = pygame.Surface((WIDTH, HEIGHT))
-dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
-# падающие предметы
+# Падающие предметы
 class Items(pygame.sprite.Sprite):
     # Изображения предметов
-    img_list = (sized(Images.egg, (150, 100)), sized(Images.apple, (100, 80)), sized(Images.cabbage, (150, 130)))
+    img_list = (change_size(Images.egg, (150, 100)), change_size(Images.apple, (100, 80)), change_size(Images.cabbage, (150, 130)))
 
     def __init__(self, *group):
         super().__init__(*group)
@@ -60,16 +49,16 @@ class Items(pygame.sprite.Sprite):
 class Farmer(pygame.sprite.Sprite):
 
     # Загрузка изображений (фермер с пустой тележкой)
-    empty_left = [sized(img, size) for img in Images.left]
-    empty_right = [sized(img, size) for img in Images.right]
+    empty_left = [change_size(img, size) for img in Images.left]
+    empty_right = [change_size(img, size) for img in Images.right]
 
     # Спрайты персонажа с наполовину полной тележкой
-    half_left = [sized(img, size) for img in Images.half_left]
-    half_right = [sized(img, size) for img in Images.half_right]
+    half_left = [change_size(img, size) for img in Images.half_left]
+    half_right = [change_size(img, size) for img in Images.half_right]
 
     # Спрайты персонажа с наполненной тележкой
-    full_left = [sized(img, size) for img in Images.full_left]
-    full_right = [sized(img, size) for img in Images.full_right]
+    full_left = [change_size(img, size) for img in Images.full_left]
+    full_right = [change_size(img, size) for img in Images.full_right]
 
     def __init__(self, *group):
         super().__init__(*group)
@@ -146,18 +135,20 @@ class Farmer(pygame.sprite.Sprite):
 
 # Игра: Весёлый фермер
 def HappyFarmer(function):
-    global score, lives, farmer, FONT    # Глобальные переменные, которые используются в классах спрайтов
+    global score, lives, farmer, game_font    # Глобальные переменные, которые используются в классах спрайтов
 
     # подключение к БД
     connect = sqlite3.connect('../settings/records.sqlite')
     cursor = connect.cursor()
     data = cursor.execute('SELECT * from data WHERE game="farmer"').fetchone()
-    record = data[2]  # берём из БД текущий рекорд
+    # Берём из БД текущий рекорд и проверяем, играет ли игрок в эту игру впервый раз (для вступления)
+    record, is_played = data[2], data[3]
 
     # Инициализация игры
     pygame.init()
     pygame.display.set_caption('Весёлая ферма')
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    farm_background = pygame.transform.scale(Images.farm_background, (WIDTH, HEIGHT))  # фон игры
 
     # Звук игры
     pygame.mixer.stop()  # приглушаем все звуки
@@ -165,19 +156,21 @@ def HappyFarmer(function):
     farm_sound.set_volume(0.5)  # громкость звука - 50%
     farm_sound.play()  # проигрываем звук
 
-    font_scale = 36  # размер игрового шрифта
-    FONT = pygame.font.Font('../data/fonts/appetite.ttf', font_scale)  # шрифт
+    font_scale = 32  # размер игрового шрифта
+    game_font = pygame.font.Font('../data/fonts/appetite.ttf', font_scale)  # шрифт
 
-    # игровые изображения (трава, сердца)
+    # Если игрок впервые играет в данную игру - проводим краткий инструктаж (если так можно выразиться):
+    if not is_played:
+        get_instruction(screen, farm_background, game_font, '../settings/farm_i.txt', 'farmer')
+
+    """ Инициализация спрайтов, изображений, музыки """
+    # Игровые изображения (трава, сердца)
     grass = pygame.transform.scale(Images.grass, (WIDTH, 100))
     heart_img = Images.heart  # сердца
     heart_width = heart_img.get_width()  # ширина сердечка
 
     score = 0  # счёт
     lives = 5  # прав на ошибку (жизней)
-
-    # фон игры
-    farm_background = pygame.transform.scale(Images.farm_background, (WIDTH, HEIGHT))
 
     paused = False  # поставлена ли игра на паузу
     all_items = pygame.sprite.Group()  # все падающие предметы
@@ -201,12 +194,12 @@ def HappyFarmer(function):
         # Проверка: поставлена ли игра на паузу
         if paused:
             farmer.sound.stop()  # приглушаем звук ходьбы фермера
-            pause(screen)  # пауза
+            pause(screen, game_font)  # пауза
         else:
             all_items.update()  # обновляем падающие предметы, если игра не поставлена на паузу
 
         # отображение счета в углу
-        screen.blit(FONT.render(f"Счёт: {score}", True, (0, 0, 0)), (WIDTH - 150, 10))
+        screen.blit(game_font.render(f"Счёт: {score}", True, (0, 0, 0)), (WIDTH - 150, 10))
 
         # обработка событий
         for event in pygame.event.get():
@@ -252,14 +245,14 @@ def HappyFarmer(function):
         Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
 
         # создаём шрифты, отображаем и/или обновляем рекорд
-        game_over_text = FONT.render(f'Время вышло!', True, 'white')
-        score_text = FONT.render(f'Словлено продуктов: {score}', True, 'white')
+        game_over_text = game_font.render(f'Время вышло!', True, 'white')
+        score_text = game_font.render(f'Словлено продуктов: {score}', True, 'white')
         if score > record:
             cursor.execute(f'UPDATE data SET record={score} WHERE game="farmer"')
             connect.commit()
-            record_text = FONT.render(f'Новый рекорд: {score}!', True, 'white')
+            record_text = game_font.render(f'Новый рекорд: {score}!', True, 'white')
         else:
-            record_text = FONT.render(f'Лучший рекорд: {record}', True, 'white')
+            record_text = game_font.render(f'Лучший рекорд: {record}', True, 'white')
 
         while True:
             # Отрисовка кнопок, фона, затемнения
@@ -282,4 +275,3 @@ def HappyFarmer(function):
             pygame.display.flip()
 
     game_over()
-

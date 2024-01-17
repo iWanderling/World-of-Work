@@ -1,7 +1,7 @@
 import pygame
 import sqlite3
+from data import *
 from time import time
-from data import Images
 from button import Button
 from random import shuffle
 
@@ -148,27 +148,30 @@ def YoungAvia(function):
     pygame.display.set_caption('Юный Авиаинженер')
     screen = pygame.display.set_mode()
     WIDTH, HEIGHT = screen.get_size()
+    back = pygame.transform.scale(Images.engineer_background, (WIDTH, HEIGHT))  # Фон игры
 
     # Подключение к БД
     connect = sqlite3.connect('../settings/records.sqlite')
     cursor = connect.cursor()
     data = cursor.execute('SELECT * from data WHERE game="engineer"').fetchone()
-    record = data[2]
+    record, is_played = data[2], data[3]
 
-    # Счёт игры
+    # Счёт игры и флаг для паузы:
     score = 0
+    paused = False
 
     # Шрифт
-    font_scale = 32  # размер шрифта
-    FONT = pygame.font.Font(f'..\data\{"fonts"}\{"appetite.ttf"}', font_scale)  # шрифт
+    font_scale = 26  # размер шрифта
+    game_font = pygame.font.Font(f'..\data\{"fonts"}\{"appetite.ttf"}', font_scale)  # шрифт
 
     # Работа со звуком
     pygame.mixer.stop()  # останавливаем музыку
     sound = pygame.mixer.Sound('../data/sounds/plane_music.mp3')
     sound.play()
 
-    # Фон игры
-    back = pygame.transform.scale(Images.engineer_background, (WIDTH, HEIGHT))
+    # Если игрок впервые играет в данную игру - проводим краткий инструктаж (если так можно выразиться):
+    if not is_played:
+        get_instruction(screen, back, game_font, '../settings/plane_i.txt', 'engineer')
 
     # Детали самолёта
     details_group = generate_details()
@@ -194,18 +197,25 @@ def YoungAvia(function):
         details_group.draw(screen)  # отрисовка деталей
         plane_group.draw(screen)  # отрисовка самолёта
 
-        # таймер (оставшееся время до конца игры)
-        timer = timer_index - int(time() - time_)
-
         # длина порядка деталей (нужна для сравнения и изменения изображения самолёта)
         order_len = len(order)
+
+        if paused:
+            pause(screen, game_font)
+        else:
+            # таймер (оставшееся время до конца игры)
+            timer = timer_index - int(time() - time_)
 
         # обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    paused = not paused
 
-            details_group.update(event)  # обновление деталей
+            if not paused:
+                details_group.update(event)  # обновление деталей
 
         if len(order) >= order_len:
             plane.update(order[-1])
@@ -231,14 +241,14 @@ def YoungAvia(function):
 
             order = [0]
 
-        timer_text = FONT.render(f'Осталось секунд: {timer}', True, 'white')
-        score_text = FONT.render(f'Построено cамолётов: {score}', True, 'white')
+        timer_text = game_font.render(f'Осталось секунд: {timer}', True, 'white')
+        score_text = game_font.render(f'Построено cамолётов: {score}', True, 'white')
         screen.blit(timer_text, (50, HEIGHT - 100))  # отображение таймера
         screen.blit(score_text, (WIDTH - score_text.get_width() - 50, HEIGHT - 100))  # отображение счёта
 
         if timer < 1:
             plane.sound.stop()
-            timer_text = FONT.render(f'Время вышло!', True, 'white')
+            timer_text = game_font.render(f'Время вышло!', True, 'white')
             screen.blit(timer_text, (100, 100))
             break
 
@@ -259,14 +269,14 @@ def YoungAvia(function):
         game_over = True
 
         # создание шрифтов
-        game_over_text = FONT.render(f'Время вышло!', True, 'white')
-        score_text = FONT.render(f'Набрано очков: {score}', True, 'white')
+        game_over_text = game_font.render(f'Время вышло!', True, 'white')
+        score_text = game_font.render(f'Набрано очков: {score}', True, 'white')
         if score > record:
-            record_text = FONT.render(f'Новый рекорд: {score}!', True, 'white')
+            record_text = game_font.render(f'Новый рекорд: {score}!', True, 'white')
             cursor.execute(f'UPDATE data SET record={score} WHERE game="engineer"')
             connect.commit()
         else:
-            record_text = FONT.render(f'Лучший рекорд: {record}', True, 'white')
+            record_text = game_font.render(f'Лучший рекорд: {record}', True, 'white')
 
         # Цикл конца игры:
         while game_over:

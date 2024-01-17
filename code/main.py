@@ -2,7 +2,6 @@ from button import *  # кнопки
 from tetris import *  # игра для строителя
 from plane import *  # игра для инженера
 from farm import *  # игра для фермера
-import sqlite3  # БД
 import os  # для проверки существования БД в настройках игры
 
 
@@ -93,14 +92,13 @@ def mainMenu():
     with open('../settings/username.txt') as username_file:
         player_name = username_file.read()
     font_player_name = pygame.font.Font(None, 24)
-    player_name_text = font_player_name.render(f"Игрок: {player_name}", True, (255, 255, 255))
+    player_name_text = font_player_name.render(f"Игрок: {player_name}", True, 'white')
     player_name_rect = player_name_text.get_rect(bottomleft=(10, HEIGHT - 10))
     screen.blit(player_name_text, player_name_rect)
 
     while True:
         screen.blit(menu_background, (0, 0))
         menu_group.draw(screen)
-
         screen.blit(player_name_text, player_name_rect)
 
         for event in pygame.event.get():
