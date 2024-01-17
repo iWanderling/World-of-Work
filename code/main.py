@@ -1,27 +1,50 @@
+from os import environ
 from button import *
 from tetris import *
 from plane import *
 from farm import *
-import sqlite3
-import os
 
-
-os.environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
+environ['SDL_VIDEO_CENTERED'] = '1'  # центрирование окна
 play = True
+pygame.mixer.init()
 
 
-# создание базы данных с хранением рекордов в каждой игре
-def create_database():
-    if not os.access('../settings/records.sqlite', os.F_OK):
-        connect = sqlite3.connect('../settings/records.sqlite')
-        cursor = connect.cursor()
+class Slider(pygame.sprite.Sprite):
+    def __init__(self, group, x, y, width, height):
+        super().__init__(group)
+        self.image = pygame.Surface((width, height))
+        self.rect = self.image.get_rect(topleft=(x, y))
+        self.color = pygame.Color('lightskyblue3')
+        self.marker_rect = pygame.Rect(0, 760, 10, height)  # Размер маркера
+        self.active = False
+        self.value = 0.5  # Изначальное положение слайдера (0.5 - посередине)
 
-        cursor.execute("CREATE TABLE data(id INTEGER PRIMARY KEY AUTOINCREMENT, game TEXT, record INT, played INT)")
+    def get_value(self):
+        return self.value
 
-        for game in ('farmer', 'builder', 'engineer'):
-            cursor.execute(f"""INSERT INTO data(game, record, played)
-                              VALUES("{game}", 0, 0)""")
-            connect.commit()
+    def set_active(self, active):
+        self.active = active
+
+    def handle_event(self, event):
+        if self.active:
+            if event.type == pygame.MOUSEMOTION:
+                mouse_x, _ = event.pos
+                mouse_x = max(self.rect.left, min(mouse_x, self.rect.right))
+                self.value = (mouse_x - self.rect.left) / self.rect.width
+                self.marker_rect.left = mouse_x - self.marker_rect.width // 2
+
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                self.active = False
+
+    def update(self, *args):
+        pass  # Нет необходимости в этом методе
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, self.color, self.rect)
+        pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
+        pygame.draw.rect(screen, (255, 0, 0), self.marker_rect)
+
+
 
 # Окно ввода имени (самое первое окно, которое появляется при запуске игры)
 def setPlayerName():
@@ -42,7 +65,7 @@ def setPlayerName():
     while active:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                exit()
+                pygame.quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     active = False
@@ -81,16 +104,16 @@ def setPlayerName():
 
 # Окно главного меню игры
 def mainMenu():
-    global play, menu_sound
+    global play
     menu_group = pygame.sprite.Group()
     Button(menu_group, func=gameLobby, y=HEIGHT // 4, text='Играть')  # играть
     Button(menu_group, func=settingsMenu, y=HEIGHT // 2.5, text='Настройки')  # настройки
-    Button(menu_group, func=exit, y=HEIGHT // 1.8, text='Выход')  # выход
+    Button(menu_group, func=pygame.quit, y=HEIGHT // 1.8, text='Выход')  # выход
+    volume_slider = Slider(menu_group, x=WIDTH - 150, y=HEIGHT - 50, width=100, height=20)
 
-    # воспроизводим музыку главного меню
     if play:
-        menu_sound = pygame.mixer.Sound('../data/sounds/menu.mp3')
-        menu_sound.play()
+        sound = pygame.mixer.Sound('../data/sounds/menu.mp3')
+        sound.play()
         play = False
 
     with open('../settings/username.txt') as username_file:
@@ -106,26 +129,35 @@ def mainMenu():
         screen.blit(menu_background, (0, 0))
         menu_group.draw(screen)
 
-        screen.blit(player_name_text, player_name_rect)
+        # Обновление и отрисовка слайдера
+        volume_slider.draw(screen)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                exit()
+                pygame.quit()
 
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if player_name_rect.collidepoint(event.pos):
-                    setPlayerName()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if volume_slider.rect.collidepoint(event.pos):
+                    volume_slider.set_active(True)
+                else:
+                    volume_slider.set_active(False)
+
+            elif event.type == pygame.MOUSEMOTION:
+                volume_slider.handle_event(event)
+                # Изменение громкости в зависимости от положения ползунка
+                pygame.mixer.music.set_volume(volume_slider.get_value())
+                #print(volume_slider.get_value())
 
             menu_group.update(event)
+
         pygame.display.flip()
 
 
 # Окно с игровыми настройками
 def settingsMenu():
-    pygame.display.set_caption('Мир Труда')
     settings_group = pygame.sprite.Group()
-    Button(settings_group, func=setPlayerName, y=325, text='Изменить имя')
-    Button(settings_group, func=mainMenu, y=435, text='Назад')
+    Button(settings_group, func=setPlayerName, y=225, text='Изменить имя')
+    Button(settings_group, func=mainMenu, y=325, text='Назад')
 
     running = True
     while running:
@@ -134,19 +166,14 @@ def settingsMenu():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                exit()
+                pygame.quit()
 
             settings_group.update(event)
         pygame.display.flip()
 
 
 # Игровое окно
-def gameLobby(soundplay=False):
-
-    # прогрываем музыку главного меню, если игрок вышел из любой игры-локации:
-    if soundplay:
-        menu_sound.play()
-
+def gameLobby():
     # задний фон игровой карты (лобби)
     lobby_background = pygame.transform.scale(Images.lobby_background, (WIDTH, HEIGHT))
 
@@ -169,14 +196,12 @@ def gameLobby(soundplay=False):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                exit()
+                pygame.quit()
             lobby_group.update(event)
         pygame.display.flip()
 
 
 if __name__ == '__main__':
-    create_database()
-
     pygame.init()
     pygame.display.set_caption('Мир Труда')  # заголовок
     screen = pygame.display.set_mode()  # создание окна
