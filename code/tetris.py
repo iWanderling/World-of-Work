@@ -2,8 +2,6 @@ from copy import deepcopy
 from random import choice
 from button import Button
 from data import *
-import sqlite3
-import pygame
 
 
 # Размеры монитора игрока
@@ -69,7 +67,7 @@ def TetrisGame(function):
     connect = sqlite3.connect('../settings/records.sqlite')
     cursor = connect.cursor()
     data = cursor.execute('SELECT * from data WHERE game="builder"').fetchone()
-    record, is_played = data[2], data[3]
+    is_played = data[3]
 
     # Фоны игровых окон
     game_window_background = pygame.transform.scale(Images.tetris_background, GAME_WINDOW_SIZE)
@@ -240,46 +238,6 @@ def TetrisGame(function):
         pygame.display.flip()
         clock.tick(FPS)
 
-    # Функция для окончания игры
-    def game_over():
-        pygame.mixer.stop()  # Обрываем все звуки
-        end_music.play()  # Звук конца игры
-        # Создаем отдельный поверхностный объект для затемнения экрана
-        dim_surface = pygame.Surface((WIDTH, HEIGHT))
-        dim_surface.set_alpha(150)  # Устанавливаем прозрачность
-
-        # Создаём кнопки
-        buttons = pygame.sprite.Group()
-        img = Images.builder_over_buttons
-        Button(buttons, func=TetrisGame, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
-        Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
-
-        # создание шрифтов
-        game_over_text = game_font.render(f'Конец игры!', True, 'aqua')
-        score_text = game_font.render(f'Набрано очков: {score}', True, 'aqua')
-        if score > record:
-            cursor.execute(f'UPDATE data SET record={score} WHERE game="builder"')
-            connect.commit()
-            record_text = game_font.render(f'Новый рекорд: {score}!', True, 'aqua')
-        else:
-            record_text = game_font.render(f'Лучший рекорд: {record}', True, 'aqua')
-
-        while True:
-            screen.blit(window_background, (0, 0))
-            screen.blit(dim_surface, (0, 0))
-            buttons.draw(screen)
-
-            # отображение шрифтов
-            screen.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2, HEIGHT // 5))
-            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, HEIGHT // 3.9))
-            screen.blit(record_text, (WIDTH // 2 - record_text.get_width() // 2, HEIGHT // 3.2))
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    exit()
-                buttons.update(event)
-
-            clock.tick(FPS)
-            pygame.display.flip()
-
-    game_over()
+    # Функция окончания игры:
+    game_over(screen, game_font, 'builder', score, TetrisGame, function, Images.builder_over_buttons, window_background,
+              'Конец игры!', 'Набрано очков', Button, color="aqua", sound=end_music)

@@ -1,5 +1,3 @@
-import pygame
-import sqlite3
 from data import *
 from time import time
 from button import Button
@@ -148,17 +146,18 @@ def YoungAvia(function):
     pygame.display.set_caption('Юный Авиаинженер')
     screen = pygame.display.set_mode()
     WIDTH, HEIGHT = screen.get_size()
-    back = pygame.transform.scale(Images.engineer_background, (WIDTH, HEIGHT))  # Фон игры
+    game_background = pygame.transform.scale(Images.engineer_background, (WIDTH, HEIGHT))  # Фон игры
 
     # Подключение к БД
     connect = sqlite3.connect('../settings/records.sqlite')
     cursor = connect.cursor()
     data = cursor.execute('SELECT * from data WHERE game="engineer"').fetchone()
-    record, is_played = data[2], data[3]
+    is_played = data[3]
 
     # Счёт игры и флаг для паузы:
     score = 0
     paused = False
+    paused_flag = False  # флаг для остановки обратного отсчёта таймера (чтобы таймер не обновлялся на паузе)
 
     # Шрифт
     font_scale = 26  # размер шрифта
@@ -171,7 +170,7 @@ def YoungAvia(function):
 
     # Если игрок впервые играет в данную игру - проводим краткий инструктаж (если так можно выразиться):
     if not is_played:
-        get_instruction(screen, back, game_font, '../settings/plane_i.txt', 'engineer')
+        get_instruction(screen, game_background, game_font, '../settings/plane_i.txt', 'engineer')
 
     # Детали самолёта
     details_group = generate_details()
@@ -186,13 +185,14 @@ def YoungAvia(function):
     plane = Plane(plane_group)
 
     # Работа с временем
-    time_ = time()
+    start_time = time()
     timer_index = 30  # 30 секунд + 5 за каждый собранный самолёт
+    timer = timer_index - int(time() - start_time)  # таймер (оставшееся время до конца игры)
     add_bonus_time = True  # флаг для добавления бонусного времени
     clock = pygame.time.Clock()
 
     while True:
-        screen.blit(back, (0, 0))  # отрисовка фона
+        screen.blit(game_background, (0, 0))  # отрисовка фона
         stand_group.draw(screen)  # отрисовка стенда
         details_group.draw(screen)  # отрисовка деталей
         plane_group.draw(screen)  # отрисовка самолёта
@@ -200,11 +200,22 @@ def YoungAvia(function):
         # длина порядка деталей (нужна для сравнения и изменения изображения самолёта)
         order_len = len(order)
 
+        # Если игра на паузе - создаём паузу, меняем флаг паузы, останавливаем звук полёта самолёта (если он улетает)
         if paused:
             pause(screen, game_font)
+            paused_flag = True
+            plane.sound.stop()
         else:
-            # таймер (оставшееся время до конца игры)
-            timer = timer_index - int(time() - time_)
+            # Если игрок продолжил играть после паузы, а пауза была включена в момент, когда самолёт улетал - заново
+            # проигрываем звук полёта:
+            if paused_flag and plane.fly:
+                plane.sound.play()
+            paused_flag = False
+
+        if paused_flag:
+            timer_index = timer  # сохраняем оставшееся время в индекс таймера
+        else:
+            timer = timer_index - int(time() - start_time)  # если нет паузы - обновляем таймер
 
         # обработка событий
         for event in pygame.event.get():
@@ -214,11 +225,16 @@ def YoungAvia(function):
                 if event.key == pygame.K_p:
                     paused = not paused
 
+                    # Обновляем отсчёт времени
+                    if not paused:
+                        start_time = time()
+
             if not paused:
                 details_group.update(event)  # обновление деталей
 
-        if len(order) >= order_len:
-            plane.update(order[-1])
+        if not paused:
+            if len(order) >= order_len:
+                plane.update(order[-1])
 
         # добавляем бонусное время, если самолёт собран
         if plane.fly and add_bonus_time:
@@ -255,49 +271,6 @@ def YoungAvia(function):
         clock.tick(FPS)
         pygame.display.flip()
 
-    # Вложенная функция для обработки действий игрока после окончания игры:
-    def game_over():
-        # Создаем отдельный поверхностный объект для затемнения экрана
-        dim_surface = pygame.Surface((WIDTH, HEIGHT))
-        dim_surface.set_alpha(150)  # Устанавливаем прозрачность
-
-        sound.stop()
-        buttons = pygame.sprite.Group()
-        img = Images.plane_over_buttons
-        Button(buttons, func=YoungAvia, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
-        Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
-        game_over = True
-
-        # создание шрифтов
-        game_over_text = game_font.render(f'Время вышло!', True, 'white')
-        score_text = game_font.render(f'Набрано очков: {score}', True, 'white')
-        if score > record:
-            record_text = game_font.render(f'Новый рекорд: {score}!', True, 'white')
-            cursor.execute(f'UPDATE data SET record={score} WHERE game="engineer"')
-            connect.commit()
-        else:
-            record_text = game_font.render(f'Лучший рекорд: {record}', True, 'white')
-
-        # Цикл конца игры:
-        while game_over:
-            screen.blit(back, (0, 0))
-            screen.blit(dim_surface, (0, 0))
-            buttons.draw(screen)
-
-            # Отображаем текст:
-            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 5))
-            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 4))
-            screen.blit(record_text, (WIDTH // 2 - record_text.get_width() // 1.9, HEIGHT // 3.4))
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        game_over = False
-                buttons.update(event)
-
-            clock.tick(FPS)
-            pygame.display.flip()
-
-    game_over()
+    # Функция завершения игры:
+    game_over(screen, game_font, 'engineer', score, YoungAvia, function, Images.plane_over_buttons, game_background,
+              'Время вышло!', 'Построено самолётов', Button)

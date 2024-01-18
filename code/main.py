@@ -1,4 +1,3 @@
-from button import *  # кнопки
 from tetris import *  # игра для строителя
 from plane import *  # игра для инженера
 from farm import *  # игра для фермера

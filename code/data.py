@@ -57,6 +57,58 @@ def get_instruction(screen, background, font, i_path, game_title):
     cursor.execute(f'UPDATE data SET played=1 WHERE game="{game_title}"')
     connect.commit()
 
+
+# Функция для завершения игры | Параметры: экран, шрифт игры, название игры (farmer, builder, engineer), набранный счёт,
+# функция игры, функция игрового лобби (function), изображения кнопок, фон игры, текста: КОНЕЦ ИГРЫ, СЧЁТ; класс кнопок,
+# необязательные параметры: [цвет, звук]:
+def game_over(screen, game_font, game_title, game_score, game_function, function, button_images, background,
+              game_over_text, score_text, Button, color='white', sound=None):
+
+    # Останавливаем все звуки и проигрываем переданный звук:
+    pygame.mixer.stop()
+    if sound is not None:
+        sound.play()
+
+    connect = sqlite3.connect('../settings/records.sqlite')
+    cursor = connect.cursor()
+    record = cursor.execute(f'SELECT record FROM data WHERE game="{game_title}"').fetchone()[0]
+
+    # Создаём кнопки:
+    button_images = button_images
+    buttons = pygame.sprite.Group()
+    Button(buttons, func=game_function, par=function, images=button_images, y=HEIGHT // 3 + 50, text='Играть снова')
+    Button(buttons, func=function, par=True, images=button_images, y=HEIGHT // 2 + 50, text='Меню')
+
+    # создаём шрифты, отображаем и/или обновляем рекорд
+    game_over_text = game_font.render(game_over_text, True, color)
+    score_text = game_font.render(f'{score_text}: {game_score}', True, color)
+    if game_score > record:
+        cursor.execute(f'UPDATE data SET record={game_score} WHERE game="{game_title}"')
+        connect.commit()
+        record_text = game_font.render(f'Новый рекорд: {game_score}!', True, color)
+    else:
+        record_text = game_font.render(f'Лучший рекорд: {record}', True, color)
+
+    while True:
+        # Отрисовка кнопок, фона, затемнения
+        screen.blit(background, (0, 0))
+        screen.blit(dim_surface, (0, 0))
+        buttons.draw(screen)
+
+        # Отрисовка текста
+        screen.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2, HEIGHT // 5))
+        screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, HEIGHT // 4))
+        screen.blit(record_text, (WIDTH // 2 - record_text.get_width() // 2, HEIGHT // 3.3))
+
+        # Обработка событий
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit()
+            buttons.update(event)
+
+        pygame.display.flip()
+
+
 # Функция для изменения размеров pygame-изображения:
 def change_size(image, size):
     return pygame.transform.scale(image, size)

@@ -1,6 +1,5 @@
-import sqlite3  # БД
-from button import Button  # Кнопки
-from data import *  # изображения
+from data import *
+from button import Button
 from random import random, choice, randint
 
 
@@ -142,7 +141,7 @@ def HappyFarmer(function):
     cursor = connect.cursor()
     data = cursor.execute('SELECT * from data WHERE game="farmer"').fetchone()
     # Берём из БД текущий рекорд и проверяем, играет ли игрок в эту игру впервый раз (для вступления)
-    record, is_played = data[2], data[3]
+    is_played = data[3]
 
     # Инициализация игры
     pygame.init()
@@ -234,44 +233,6 @@ def HappyFarmer(function):
         clock.tick(FPS)
         pygame.display.flip()
 
-    # Функция для окончания игры
-    def game_over():
-        pygame.mixer.stop()  # останавливем все звуки
-
-        # создаём кнопки
-        img = Images.farm_over_buttons
-        buttons = pygame.sprite.Group()
-        Button(buttons, func=HappyFarmer, par=function, images=img, y=HEIGHT // 3 + 50, text='Играть снова')
-        Button(buttons, func=function, par=True, images=img, y=HEIGHT // 2 + 50, text='Меню')
-
-        # создаём шрифты, отображаем и/или обновляем рекорд
-        game_over_text = game_font.render(f'Время вышло!', True, 'white')
-        score_text = game_font.render(f'Словлено продуктов: {score}', True, 'white')
-        if score > record:
-            cursor.execute(f'UPDATE data SET record={score} WHERE game="farmer"')
-            connect.commit()
-            record_text = game_font.render(f'Новый рекорд: {score}!', True, 'white')
-        else:
-            record_text = game_font.render(f'Лучший рекорд: {record}', True, 'white')
-
-        while True:
-            # Отрисовка кнопок, фона, затемнения
-            screen.blit(farm_background, (0, 0))
-            screen.blit(dim_surface, (0, 0))
-            buttons.draw(screen)
-
-            # Отрисовка текста
-            screen.blit(game_over_text, (WIDTH // 2 - font_scale * 4, HEIGHT // 5))
-            screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 1.9, HEIGHT // 4))
-            screen.blit(record_text, (WIDTH // 2 - font_scale * 4 - record_text.get_width() // 10, HEIGHT // 3.3))
-
-            # Обработка событий
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    exit()
-                buttons.update(event)
-
-            clock.tick(FPS)
-            pygame.display.flip()
-
-    game_over()
+    # Функция окончания игры:
+    game_over(screen, game_font, 'farmer', score, HappyFarmer, function, Images.farm_over_buttons, farm_background,
+              'Время вышло!', 'Собрано продуктов', Button)
