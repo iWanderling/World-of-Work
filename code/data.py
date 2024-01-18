@@ -116,14 +116,14 @@ def change_size(image, size):
 
 # Функция для загрузки и конвентирования изображения в pygame-формат:
 def loader(folder, name):
-    address = path.join(f'..\data\images\{folder}', name)
+    address = path.join(f'../data/images/{folder}', name)
     return pygame.image.load(address)
 
 
-# Игровая пауза:
-def pause(screen, game_font):
+# Игровая пауза (Также используется, как экран с вопросом игроку о его желании завершить игру):
+def pause(screen, game_font, text="Пауза. Нажмите P, чтобы продолжить"):
     screen.blit(dim_surface, (0, 0))  # Затемнение экрана
-    pause_text = game_font.render("Пауза. Нажмите P, чтобы продолжить", True, 'white')
+    pause_text = game_font.render(text, True, 'white')
     screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 20))  # отображение текста
 
 

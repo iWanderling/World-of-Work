@@ -1,3 +1,5 @@
+import pygame
+
 from data import *
 from button import Button
 from random import random, choice, randint
@@ -172,6 +174,7 @@ def HappyFarmer(function):
     lives = 5  # прав на ошибку (жизней)
 
     paused = False  # поставлена ли игра на паузу
+    wanna_quit = False  # если игрок нажимает на Esc, то спрашиваем, желает ли он завершить игру (флаг)
     all_items = pygame.sprite.Group()  # все падающие предметы
 
     farmer_group = pygame.sprite.Group()  # фермер
@@ -179,7 +182,8 @@ def HappyFarmer(function):
 
     # Главный цикл игры
     clock = pygame.time.Clock()
-    while True:
+    running = True
+    while running:
         # отрисовка всех изображений на экране
         screen.blit(farm_background, (0, 0))  # отрисовка фона
         screen.blit(grass, (0, HEIGHT - 100))  # отрисовка травы (это не то, о чём вы подумали)
@@ -190,10 +194,13 @@ def HappyFarmer(function):
         for i in range(lives):
             screen.blit(heart_img, (10 + i * (heart_width + 5), 10))
 
-        # Проверка: поставлена ли игра на паузу
+        # Проверка: поставлена ли игра на паузу или желает ли игрок выйти:
         if paused:
             farmer.sound.stop()  # приглушаем звук ходьбы фермера
             pause(screen, game_font)  # пауза
+        elif wanna_quit:
+            farmer.sound.stop()
+            pause(screen, game_font, text='Вы хотите выйти? Нажмите ENTER, чтобы завершить игру')
         else:
             all_items.update()  # обновляем падающие предметы, если игра не поставлена на паузу
 
@@ -204,12 +211,19 @@ def HappyFarmer(function):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()  # закрытие всей игры
+
+            # Работаем с паузой и остановкой игры на Esc + Enter (последовательно):
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+                if event.key == pygame.K_p and not wanna_quit:
                     paused = not paused
+                elif event.key == pygame.K_ESCAPE:  # Попытка завершения игры блокирует паузу
+                    wanna_quit = not wanna_quit
+                    paused = False
+                elif event.key == pygame.K_RETURN and wanna_quit:
+                    running = False
 
         # если игра не на паузе - продолжаем обработку событий:
-        if not paused:
+        if not paused and not wanna_quit:
             stay = False  # флаг для проверки: стоит ли фермер на месте или движется (объяснение в классе фермера)
             keys = pygame.key.get_pressed()
             # обрабатываем движение фермера влево
@@ -230,6 +244,7 @@ def HappyFarmer(function):
             # если количество жизней кончилось - завершаем игру
             if not lives:
                 break
+
         clock.tick(FPS)
         pygame.display.flip()
 

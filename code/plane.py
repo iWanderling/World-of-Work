@@ -158,6 +158,7 @@ def YoungAvia(function):
     score = 0
     paused = False
     paused_flag = False  # флаг для остановки обратного отсчёта таймера (чтобы таймер не обновлялся на паузе)
+    wanna_quit = False  # если игрок нажимает на Esc, то спрашиваем, желает ли он завершить игру (флаг)
 
     # Шрифт
     font_scale = 26  # размер шрифта
@@ -190,8 +191,8 @@ def YoungAvia(function):
     timer = timer_index - int(time() - start_time)  # таймер (оставшееся время до конца игры)
     add_bonus_time = True  # флаг для добавления бонусного времени
     clock = pygame.time.Clock()
-
-    while True:
+    running = True
+    while running:
         screen.blit(game_background, (0, 0))  # отрисовка фона
         stand_group.draw(screen)  # отрисовка стенда
         details_group.draw(screen)  # отрисовка деталей
@@ -203,6 +204,10 @@ def YoungAvia(function):
         # Если игра на паузе - создаём паузу, меняем флаг паузы, останавливаем звук полёта самолёта (если он улетает)
         if paused:
             pause(screen, game_font)
+            paused_flag = True
+            plane.sound.stop()
+        elif wanna_quit:
+            pause(screen, game_font, text='Вы хотите выйти? Нажмите ENTER, чтобы завершить игру')
             paused_flag = True
             plane.sound.stop()
         else:
@@ -222,17 +227,22 @@ def YoungAvia(function):
             if event.type == pygame.QUIT:
                 exit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+                if event.key == pygame.K_p and not wanna_quit:
                     paused = not paused
-
-                    # Обновляем отсчёт времени
                     if not paused:
                         start_time = time()
+                elif event.key == pygame.K_ESCAPE:
+                    wanna_quit = not wanna_quit
+                    paused = False
+                    if not wanna_quit:
+                        start_time = time()
+                elif event.key == pygame.K_RETURN and wanna_quit:
+                    running = False
 
-            if not paused:
+            if not paused and not wanna_quit:
                 details_group.update(event)  # обновление деталей
 
-        if not paused:
+        if not paused and not wanna_quit:
             if len(order) >= order_len:
                 plane.update(order[-1])
 
@@ -257,6 +267,7 @@ def YoungAvia(function):
 
             order = [0]
 
+        # Отрисовка таймера, счётчика построенных самолётов:
         timer_text = game_font.render(f'Осталось секунд: {timer}', True, 'white')
         score_text = game_font.render(f'Построено cамолётов: {score}', True, 'white')
         screen.blit(timer_text, (50, HEIGHT - 100))  # отображение таймера

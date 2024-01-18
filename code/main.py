@@ -1,7 +1,7 @@
 from tetris import *  # игра для строителя
 from plane import *  # игра для инженера
 from farm import *  # игра для фермера
-import os  # для проверки существования БД в настройках игры
+import os  # для проверки существования БД в настройках игры и центрирования экрана
 
 
 # Центрирование окна, создание флага для первого проигрывания музыки в главном меню
@@ -9,8 +9,14 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 play = True
 
 
-# Создание базы данных с хранением рекордов в каждой игре (если она существует - то не создаём)
+# Создание базы данных с хранением рекордов в каждой игре (если она существует - то не создаём), а также имя игрока:
 def create_database():
+    # создаём файл с именем игрока
+    if not os.access('../settings/username.txt', os.F_OK):
+        with open('../settings/username.txt', 'w') as f:
+            f.write('')
+
+    # создаём БД
     if not os.access('../settings/records.sqlite', os.F_OK):
         connect = sqlite3.connect('../settings/records.sqlite')
         cursor = connect.cursor()

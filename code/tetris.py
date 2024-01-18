@@ -101,7 +101,7 @@ def TetrisGame(function):
     # Игровые переменные
     score = ROWS = 0  # очки, собранные ряды
     PAUSED = False  # поставлена ли игра на паузу
-
+    wanna_quit = False  # если игрок нажимает на Esc, то спрашиваем, желает ли он завершить игру (флаг)
     # Координаты падающей фигуры, скорость падения фигуры (пикселей/сек.)
     FALL_CURRENT_POSITION, FALL_SPEED = 0, 300
     FPS = 240
@@ -145,10 +145,13 @@ def TetrisGame(function):
                     X_DIRECTION -= 1  # перемещение по x <<-
                 elif event.key == pygame.K_SPACE or event.key == pygame.K_w:  # переворачивание текущей фигуры
                     ROTATION = True
-                elif event.key == pygame.K_ESCAPE:  # ещё один выход (на Esc)
-                    exit()
-                elif event.key == pygame.K_p:  # Добавлено условие для кнопки P
-                    PAUSED = not PAUSED  # Включение/выключение паузы
+                elif event.key == pygame.K_p and not wanna_quit:
+                    PAUSED = not PAUSED
+                elif event.key == pygame.K_ESCAPE:  # Попытка завершения игры блокирует паузу
+                    wanna_quit = not wanna_quit
+                    PAUSED = False
+                elif event.key == pygame.K_RETURN and wanna_quit:
+                    running = False
 
         # переворачивание текущей фигуры (по часовой стрелке, на клавишу SPACE)
         if ROTATION:
@@ -179,7 +182,7 @@ def TetrisGame(function):
 
         # Обработка столкновения фигуры с "полом" экрана. Если фигура упала, то она сохраняется на игровом поле в том
         # виде, в котором она приземлилась, включая цвет. Также создаём следующую фигуру
-        if FALL_CURRENT_POSITION > 2000 and not PAUSED:
+        if FALL_CURRENT_POSITION > 2000 and not PAUSED and not wanna_quit:
             FALL_CURRENT_POSITION = 0
             for i in range(4):
                 current_figure[i].y += 1
@@ -200,6 +203,8 @@ def TetrisGame(function):
         # Если игра поставлена на паузу:
         if PAUSED:
             pause(screen, game_font)
+        elif wanna_quit:
+            pause(screen, game_font, text='Вы хотите выйти? Нажмите ENTER, чтобы завершить игру')
 
         # поиск заполненных рядов в игровом поле
         row = TILE_HEIGHT - 1
