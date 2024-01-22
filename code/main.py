@@ -23,7 +23,7 @@ def create_database():
         cursor.execute("CREATE TABLE data(id INTEGER PRIMARY KEY AUTOINCREMENT, game TEXT, record INT, played INT)")
 
         # Добавление данных в БД
-        for game in ('farmer', 'builder', 'engineer'):
+        for game in ('farmer', 'builder', 'engineer', 'final'):
             cursor.execute(f"""INSERT INTO data(game, record, played)
                               VALUES("{game}", 0, 0)""")
             connect.commit()
@@ -140,6 +140,9 @@ def settingsMenu():
 # Игровое окно
 def gameLobby(soundplay=False):
 
+    connect = sqlite3.connect('../settings/records.sqlite')
+    cursor = connect.cursor()
+
     # Проигрываем музыку главного меню, если игрок вышел из любой игры-локации:
     if soundplay:
         menu_sound.play()
@@ -147,7 +150,19 @@ def gameLobby(soundplay=False):
     # задний фон игровой карты (лобби)
     lobby_background = pygame.transform.scale(Images.lobby_background, (WIDTH, HEIGHT))
 
-    size = (350, 350)
+    # если игрок поиграл во все игры и набрал хотя-бы несколько очков в каждой из них - то поздравляем его
+    if cursor.execute('SELECT played FROM data WHERE game="final"').fetchall()[0][0] == 0:
+        data = cursor.execute('SELECT record FROM data').fetchall()[:-1]
+        for d in data:
+            if d[0] == 0:
+                break
+        else:
+            font_scale = 24  # размер игрового шрифта
+            _font = pygame.font.Font('../data/fonts/appetite.ttf', font_scale)  # шрифт
+
+            get_instruction(screen, lobby_background, _font, '../settings/congrats.txt', 'final')
+
+    size = (350, 350)  # размеры кнопок локаций
     lobby_group = pygame.sprite.Group()
 
     # локация фермера

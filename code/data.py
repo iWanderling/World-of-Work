@@ -29,6 +29,13 @@ def get_instruction(screen, background, font, i_path, game_title):
     with open(i_path, encoding='utf-8') as f:
         instruction = [s.strip() for s in f.readlines()]  # чтение инструкции
 
+    if game_title == 'final':
+        with open('../settings/username.txt') as f:
+            try:
+                instruction[0] = instruction[0].replace('наш юный друг', f.readlines()[0])
+            except IndexError:
+                pass
+
     # Цикл для отображения инструкции:
     irun = True
     while irun:
@@ -46,7 +53,10 @@ def get_instruction(screen, background, font, i_path, game_title):
         # Обрабатываем нажатие на любую кнопку, чтобы начать игру
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_s:
+                if game_title == 'final':
+                    irun = False
+                    break
+                elif event.key == pygame.K_s:
                     irun = False
                     break
             elif event.type == pygame.QUIT:
