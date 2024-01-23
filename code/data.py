@@ -21,6 +21,12 @@ dim_surface = pygame.Surface((WIDTH, HEIGHT))
 dim_surface.set_alpha(150)  # Устанавливаем прозрачность
 
 
+# Функция для возврата установленной в настройках громкости:
+def get_volume():
+    with open('../settings/volume.txt') as f:
+        return float(f.readlines()[0]) / 100
+
+
 # Отображение инструкции в каждой игре (запрос: экран, фон игры, шрифт игры, путь к инструкции, название игры):
 def get_instruction(screen, background, font, i_path, game_title):
     # Открываем БД и текстом инструкции:
@@ -147,6 +153,7 @@ class Images:
     farm_over_buttons = loader('interface', 'farm.png'), loader('interface', 'farm_hover.png')  # кнопки фермера
     builder_over_buttons = loader('interface', 'builder.png'), loader('interface', 'builder_hover.png')  # кнопки build
     plane_over_buttons = loader('interface', 'plane.png'), loader('interface', 'plane_hover.png')  # кнопки инженера
+    slider = loader('interface', 'slider.png')
 
     # Изображения игры Весёлая Ферма
     apple = loader('farm', 'apple.png')  # яйцо

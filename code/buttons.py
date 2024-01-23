@@ -1,6 +1,6 @@
 import pygame
 from os import path  # для загрузки шрифта и звука
-from data import Images  # для загрузки изображений
+from data import Images, get_volume  # для загрузки изображений
 
 
 # размеры монитора пользователя
@@ -39,6 +39,7 @@ class Button(pygame.sprite.Sprite):
 
         # Загрузка звукового эффекта при нажатии кнопки
         self.sound = pygame.mixer.Sound('../data/sounds/pressed.mp3')
+        self.sound.set_volume(get_volume())
 
     def update(self, event):
         # обработка наведения и нажатия на кнопку
@@ -59,3 +60,43 @@ class Button(pygame.sprite.Sprite):
             self.function(self.parameter)  # для обработки функции с параметром (используется в функциях всех 3 игр)
         else:
             self.function()  # простая обработка функции
+
+
+# Класс для изменения громкости (реализован в виде ползунка)
+class Slider(pygame.sprite.Sprite):
+    def __init__(self, *group, x, y, screen):
+        super().__init__(*group)
+        self.screen = screen  # экран, на котором будем рисовать ползунок
+        self.image = pygame.transform.scale(Images.slider, (50, 50))  # изображение ползунка
+        self.mask = pygame.mask.from_surface(self.image)  # маска изображения
+
+        self.mouse_previous_pos = pygame.mouse.get_pos()  # предыдущая позиция мыши
+        self.moving = False  # можно ли передвигать ползунок (флаг)
+
+        # Область ползунка
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def update(self, event):
+        mouse_pos = pygame.mouse.get_pos()
+
+        # обработка клика левой кнопкой мыши по маске детали (разрешаем передвижение если все условия соблюдены):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mask_pos = mouse_pos[0] - self.rect.x, mouse_pos[1] - self.rect.y
+                if self.rect.collidepoint(*mouse_pos) and self.mask.get_at(mask_pos):
+                    self.moving = True
+
+        # обработка передвижения мыши: передвигаем ползунок, если это разрешено:
+        if event.type == pygame.MOUSEMOTION:
+            if self.moving:
+                x = mouse_pos[0] - self.mouse_previous_pos[0]
+                if WIDTH // 2 - 110 <= self.rect.x + x <= WIDTH // 2 + 60:
+                    self.rect.x += x
+                else:
+                    self.moving = False
+            self.mouse_previous_pos = mouse_pos
+
+        if event.type == pygame.MOUSEBUTTONUP:
+            self.moving = False

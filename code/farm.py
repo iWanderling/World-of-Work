@@ -1,7 +1,7 @@
 import pygame
 
 from data import *
-from button import Button
+from buttons import Button
 from random import random, choice, randint
 
 
@@ -15,7 +15,8 @@ size = (350, 350)  # размеры персонажа (фермера)
 # Падающие предметы
 class Items(pygame.sprite.Sprite):
     # Изображения предметов
-    img_list = (change_size(Images.egg, (150, 100)), change_size(Images.apple, (100, 80)), change_size(Images.cabbage, (150, 130)))
+    img_list = (change_size(Images.egg, (150, 100)), change_size(Images.apple, (100, 80)),
+                change_size(Images.cabbage, (150, 130)))
 
     def __init__(self, *group):
         super().__init__(*group)
@@ -29,6 +30,7 @@ class Items(pygame.sprite.Sprite):
 
         # Загрузка звука падения предмета в тележку фермера
         self.sound = pygame.mixer.Sound('../data/sounds/catch.mp3')
+        self.sound.set_volume(sound_parameter)
 
     def update(self):
         global lives, score, farmer
@@ -80,6 +82,7 @@ class Farmer(pygame.sprite.Sprite):
 
         # Загрузка звука ходьбы фермера (по траве)
         self.sound = pygame.mixer.Sound('../data/sounds/going.mp3')
+        self.sound.set_volume(sound_parameter)
         self.sound_playing = True  # флаг для проигрывания звука (только если фермер идёт)
 
     def update(self, stay=False):
@@ -136,7 +139,10 @@ class Farmer(pygame.sprite.Sprite):
 
 # Игра: Весёлый фермер
 def HappyFarmer(function):
-    global score, lives, farmer, game_font    # Глобальные переменные, которые используются в классах спрайтов
+    # Глобальные переменные, которые используются в классах спрайтов
+    global score, lives, farmer, game_font, sound_parameter
+
+    sound_parameter = get_volume()  # параметр громкости
 
     # подключение к БД
     connect = sqlite3.connect('../settings/records.sqlite')
@@ -154,7 +160,7 @@ def HappyFarmer(function):
     # Звук игры
     pygame.mixer.stop()  # приглушаем все звуки
     farm_sound = pygame.mixer.Sound('../data/sounds/farm_sound.mp3')  # звуки фермы (природы) - фоновый звук
-    farm_sound.set_volume(0.5)  # громкость звука - 50%
+    farm_sound.set_volume(sound_parameter)  # громкость звука - 50%
     farm_sound.play()  # проигрываем звук
 
     font_scale = 32  # размер игрового шрифта

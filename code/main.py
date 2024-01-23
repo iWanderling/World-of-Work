@@ -1,8 +1,10 @@
+import pygame
+
 from tetris import *  # игра для строителя
 from plane import *  # игра для инженера
 from farm import *  # игра для фермера
 import os  # для проверки существования БД в настройках игры и центрирования экрана
-
+from buttons import Slider
 
 # Центрирование окна, создание флага для первого проигрывания музыки в главном меню
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -90,6 +92,7 @@ def mainMenu():
     # Воспроизводим музыку главного меню (за это отвечает флаг play)
     if play:
         menu_sound = pygame.mixer.Sound('../data/sounds/menu.mp3')
+        menu_sound.set_volume(get_volume())
         menu_sound.play()
         play = False
 
@@ -122,8 +125,9 @@ def mainMenu():
 def settingsMenu():
     pygame.display.set_caption('Мир Труда')
     settings_group = pygame.sprite.Group()
-    Button(settings_group, func=setPlayerName, y=325, text='Изменить имя')
-    Button(settings_group, func=mainMenu, y=435, text='Назад')
+    Button(settings_group, func=setPlayerName, y=HEIGHT // 4, text='Изменить имя')
+    Button(settings_group, func=changeVolume, y=HEIGHT // 2.5, text='Звук')
+    Button(settings_group, func=mainMenu, y=HEIGHT // 1.8, text='Назад')
 
     while True:
         screen.blit(menu_background, (0, 0))
@@ -137,7 +141,53 @@ def settingsMenu():
         pygame.display.flip()
 
 
-# Игровое окно
+# Функция в настройках - изменение громкости всей игры:
+def changeVolume():
+    volume_group = pygame.sprite.Group()  # группа кнопки и ползунка
+    back_b = Button(volume_group, func=settingsMenu, y=HEIGHT // 1.6, text='Назад')  # кнопка "назад"
+    slider = Slider(volume_group, x=WIDTH // 2 - 110 + (get_volume() * 100) * 1.7, y=HEIGHT // 2.1, screen=screen)
+
+    font_scale = 26
+    volume_font = pygame.font.Font('../data/fonts/appetite.ttf', font_scale)  # шрифт
+    volume_text = volume_font.render('Двигайте ползунок влево и вправо, чтобы изменить громкость звука', True, 'white')
+    w, h = volume_text.get_width(), volume_text.get_height()  # размеры volume_text
+
+    # разница левой и правой координаты x [линии ползунка] (необходима для корректного вычисления параметра звука)
+    bar_width_difference = (WIDTH // 2 + 60) - (WIDTH // 2 - 110)
+
+    while True:
+        screen.blit(menu_background, (0, 0))  # отображение фона
+        screen.blit(volume_text, (WIDTH // 2 - w // 2, HEIGHT // 5))  # отображение текста-подсказки
+
+        # рисуем полосу, по которой перемещается ползунок
+        pygame.draw.rect(screen, 'gray', (WIDTH // 2 - 100, HEIGHT // 2, 200, 10))
+
+        # отображаем параметр звука:
+        sound_parameter = int((slider.rect.x - (WIDTH // 2 - 110)) // (bar_width_difference / 100))
+
+        # сохраняем значение громкости звука:
+        with open('../settings/volume.txt', 'w') as f:
+            f.write(str(sound_parameter))  # записываем громкость в файл
+            menu_sound.set_volume(sound_parameter / 100)  # сразу же меняем значение громкости музыки главного меню
+            back_b.sound.set_volume(sound_parameter / 100)  # и громкость клика по кнопке "назад" (продумано, хе-хе)
+
+        # отображаем уровень громкости (текст):
+        volume_k_text = volume_font.render(f'Громкость: {sound_parameter}', True, 'white')
+        vkt_w = volume_k_text.get_width()
+        screen.blit(volume_k_text, (WIDTH // 2 - vkt_w // 2, HEIGHT // 3))
+
+        # отображение кнопки и ползунка
+        volume_group.draw(screen)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit()
+            volume_group.update(event)
+
+        pygame.display.flip()
+
+
+# Игровое окно (лобби с локациями разных профессий):
 def gameLobby(soundplay=False):
 
     connect = sqlite3.connect('../settings/records.sqlite')
@@ -197,7 +247,12 @@ if __name__ == '__main__':
     menu_background = Images.menu_background
     menu_background = pygame.transform.scale(menu_background, (WIDTH, HEIGHT))
 
-    # сохраняем имя пользователя, если его ещё нет
+    # Если значение звука ещё не указано - ставим 50%
+    if not os.access('../settings/volume.txt', os.F_OK):
+        with open('../settings/volume.txt', 'w') as volume_file:
+            volume_file.write('50')
+
+    # Сохраняем имя пользователя, если его ещё нет:
     with open('../settings/username.txt') as username:
         username = username.read()
         if not username:

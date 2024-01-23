@@ -1,6 +1,6 @@
 from copy import deepcopy
 from random import choice
-from button import Button
+from buttons import Button
 from data import *
 
 
@@ -57,6 +57,8 @@ def TetrisGame(function):
     current_figure = deepcopy(choice(figures))
     next_figure = deepcopy(choice(figures))
 
+    sound_parameter = get_volume()  # параметр громкости
+
     """ Инициализация игры """
     pygame.init()
     pygame.mixer.stop()
@@ -85,10 +87,16 @@ def TetrisGame(function):
 
     # Загрузка звуков для игры
     fall_sound = pygame.mixer.Sound('../data/sounds/fall.mp3')  # звук падения фигуры
+    fall_sound.set_volume(sound_parameter)
+
     sound = pygame.mixer.Sound('../data/sounds/collect-row.mp3')  # звук, который проигрывается при создании ряда
+    sound.set_volume(sound_parameter)
+
     end_music = pygame.mixer.Sound('../data/sounds/builder_end.mp3')  # конец игры
+    end_music.set_volume(sound_parameter)
+
     game_music = pygame.mixer.Sound('../data/sounds/builder_music.mp3')  # игровая музыка
-    game_music.set_volume(0.5)  # громкость - 50%
+    game_music.set_volume(sound_parameter)
     game_music.play()  # проигрываем фоновую музыку
 
     # Отрисовка текстов, которые не меняются:

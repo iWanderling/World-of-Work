@@ -1,6 +1,6 @@
 from data import *
 from time import time
-from button import Button
+from buttons import Button
 from random import shuffle
 
 
@@ -46,8 +46,9 @@ class Detail(pygame.sprite.Sprite):
 
         # Загрузка звуков сварки и неправильного выбора детали:
         self.sound = pygame.mixer.Sound('../data/sounds/svarka.mp3')
+        self.sound.set_volume(sound_parameter)
         self.incorrect_sound = pygame.mixer.Sound('../data/sounds/plane_incorrect.mp3')
-        self.incorrect_sound.set_volume(0.3)
+        self.incorrect_sound.set_volume(sound_parameter)
 
     def update(self, event):
         mouse_pos = pygame.mouse.get_pos()
@@ -112,6 +113,7 @@ class Plane(pygame.sprite.Sprite):
         self.play_sound_flag = True  # флаг, нужен для проигрывания звука полёта
         self.rect = self.image.get_rect()
         self.sound = pygame.mixer.Sound('../data/sounds/fly.mp3')  # звук вылета самолёта
+        self.sound.set_volume(sound_parameter)
         self.rect.x = WIDTH // 2 - self.rect.width // 1.7
         self.rect.y = HEIGHT - 350
 
@@ -139,7 +141,9 @@ class Plane(pygame.sprite.Sprite):
 
 # Игровая функция:
 def YoungAvia(function):
-    global stand, order, score
+    global stand, order, score, sound_parameter
+
+    sound_parameter = get_volume()  # параметр громкости
 
     # Инициализация игры
     pygame.init()
@@ -162,11 +166,12 @@ def YoungAvia(function):
 
     # Шрифт
     font_scale = 26  # размер шрифта
-    game_font = pygame.font.Font(f'..\data\{"fonts"}\{"appetite.ttf"}', font_scale)  # шрифт
+    game_font = pygame.font.Font('../data/fonts/appetite.ttf', font_scale)  # шрифт
 
     # Работа со звуком
     pygame.mixer.stop()  # останавливаем музыку
     sound = pygame.mixer.Sound('../data/sounds/plane_music.mp3')
+    sound.set_volume(sound_parameter)
     sound.play()
 
     # Если игрок впервые играет в данную игру - проводим краткий инструктаж (если так можно выразиться):
